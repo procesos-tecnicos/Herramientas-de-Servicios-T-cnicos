@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Generador Etiquetas Biblioteca - USC</title>
+    <link rel="icon" href="favicon-barcodes-mrc.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="logo-barcodes-mrc.png">
+    <script src="vendor/JsBarcode.all.min.js"></script>
+    <style>
+        /* Configuraciones generales */
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            padding: 20px; 
+            background-color: #e9ecef; 
+        }
+        
+        /* Controles de interfaz */
+        .controles {
+            background: white; 
+            padding: 20px 30px; 
+            border-radius: 12px; 
+            margin-bottom: 20px;
+            text-align: center; 
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+            max-width: 8.5in; 
+            margin-left: auto; 
+            margin-right: auto;
+            border-top: 5px solid #0056b3;
+        }
+
+        .controles h2 { 
+            margin-top: 0; 
+            color: #333; 
+            font-size: 22px; 
+            margin-bottom: 5px; 
+            user-select: none;
+            cursor: default;
+        }
+        
+        .info-fija { color: #555; font-size: 14px; margin-bottom: 15px; }
+        
+        /* Botón de compra */
+        .btn-comprar {
+            display: inline-block;
+            background-color: #ff8c00;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 6px;
+            margin-top: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .btn-comprar:hover {
+            background-color: #e67e00;
+            transform: translateY(-1px);
+        }
+
+        .panel-config {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+
+        /* Panel Desplegable de Ajustes */
+        .panel-ajustes-avanzados {
+            background: #e3f2fd;
+            border-radius: 8px;
+            border: 1px solid #90caf9;
+            margin-bottom: 15px;
+            text-align: left;
+            overflow: hidden;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .panel-ajustes-avanzados summary {
+            padding: 10px 15px;
+            font-weight: bold;
+            color: #0d47a1;
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+        .panel-ajustes-avanzados summary:hover {
+            background: #bbdefb;
+        }
+        .ajustes-visuales {
+            padding: 15px;
+            border-top: 1px solid #90caf9;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: white; 
+        }
+
+        .input-group {
+            background: #f8f9fa;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .controles input[type="number"] { 
+            font-size: 15px; 
+            padding: 4px; 
+            text-align: center; 
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .input-hoja { width: 60px; }
+        .input-ajuste { width: 65px; }
+        
+        /* Botones generales */
+        button {
+            padding: 10px 20px; 
+            font-size: 15px; 
+            cursor: pointer; 
+            border: none; 
+            border-radius: 6px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        button:hover { opacity: 0.9; transform: translateY(-1px); }
+        button:disabled { background-color: #ccc; cursor: not-allowed; transform: none; color: #666; }
+
+        .btn-nav { background-color: #6c757d; color: white; }
+        .btn-print { background-color: #28a745; color: white; font-size: 15px;}
+        .btn-print-rango { background-color: #6f42c1; color: white; font-size: 15px;}
+        
+        .navegacion-hojas {
+            font-size: 18px;
+            font-weight: bold;
+            color: #0056b3;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Forzar la impresión en formato Letter Portrait y crear saltos de página */
+        @page { size: letter portrait; margin: 0; }
+        @media print {
+            body { background: transparent; padding: 0; }
+            .controles { display: none !important; } 
+            
+            .hoja { 
+                box-shadow: none !important; 
+                width: 8.5in !important; 
+                height: 11in !important; 
+                page-break-after: always;
+                break-after: page;
+                margin: 0 !important;
+            }
+            .hoja:last-child {
+                page-break-after: auto;
+                break-after: auto;
+            }
+            .etiqueta { outline: none !important; } 
+        }
+
+        /* Contenedor principal de la hoja (Medidas exactas OL385) */
+        .hoja {
+            background: white; 
+            width: 8.5in; 
+            height: 11in; 
+            margin: 0 auto 20px auto;
+            position: relative; 
+            display: flex; 
+            box-shadow: 0 0 15px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            
+            /* Márgenes exactos de la hoja */
+            padding-top: 0.505in;
+            padding-bottom: 0.505in;
+            padding-left: 0.3075in;
+            padding-right: 0.3075in;
+        }
+
+        /* Cuadrícula de 4x15 (60 etiquetas) */
+        .cuadricula {
+            flex-grow: 1; 
+            display: grid; 
+            grid-template-columns: repeat(4, 1.75in);
+            grid-template-rows: repeat(15, 0.666in);
+            column-gap: 0.295in; 
+            row-gap: 0in;        
+        }
+
+        /* Diseño de cada etiqueta individual */
+        .etiqueta {
+            width: 1.75in;
+            height: 0.666in;
+            border-radius: 0.07812in;
+            display: flex; 
+            flex-direction: column; 
+            justify-content: center;
+            align-items: center; 
+            text-align: center; 
+            overflow: hidden; 
+            outline: 1px dashed #ccc; 
+            box-sizing: border-box;
+            padding: 0.02in; 
+        }
+        
+        .texto-biblioteca { font-weight: normal; margin-bottom: 2px; }
+        
+        /* Contenedor del código de barras centrado */
+        .barcode-container {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .barcode-container svg { 
+            max-width: 100%; 
+            height: auto; 
+            display: block;
+        }
+
+        /* Estilos del Modal Secreto */
+        .modal-secreto {
+            display: none; 
+            position: fixed; 
+            top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.6); 
+            z-index: 9999; 
+            justify-content: center; 
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .modal-contenido {
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            max-width: 400px; 
+            text-align: center; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            border-top: 6px solid #ff4757;
+            font-family: 'Segoe UI', sans-serif;
+            animation: popIn 0.3s ease-out;
+        }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <div class="controles">
+        <h2 id="tituloPrincipal">📚 Generador de Etiquetas - USC</h2>
+        <div class="info-fija">
+            Secuencia inicial fijada en: <strong>5 3709 0105 6000</strong><br>
+            <small style="color:#666;">Formato: OL385 (60 etiquetas por hoja | 1.75" x 0.666")</small><br>
+            <a href="https://www.onlinelabels.com/products/ol385?reward=oX7LjUfHj0w7M7RV7p7vEA%3d%3d" target="_blank" class="btn-comprar">🛒 Comprar Labels</a>
+        </div>
+
+        <details class="panel-ajustes-avanzados">
+            <summary>⚙️ Mostrar ajustes avanzados de tamaño</summary>
+            <div class="ajustes-visuales">
+                <div class="input-group">
+                    <label>Ancho Barras:</label>
+                    <input type="number" id="ajusteWidth" class="input-ajuste" value="1.4" step="0.05" min="0.5" max="3" oninput="generarEtiquetasVistaNormal()">
+                </div>
+                <div class="input-group">
+                    <label>Alto Barras:</label>
+                    <input type="number" id="ajusteHeight" class="input-ajuste" value="28" step="1" min="10" max="60" oninput="generarEtiquetasVistaNormal()">
+                </div>
+                <div class="input-group">
+                    <label>Letra Números:</label>
+                    <input type="number" id="ajusteFontSize" class="input-ajuste" value="11" step="0.5" min="5" max="20" oninput="generarEtiquetasVistaNormal()">
+                </div>
+                <div class="input-group">
+                    <label>Letra Título:</label>
+                    <input type="number" id="ajusteTituloSize" class="input-ajuste" value="7.5" step="0.5" min="4" max="15" oninput="generarEtiquetasVistaNormal()">
+                </div>
+            </div>
+        </details>
+        
+        <div class="panel-config">
+            <button class="btn-nav" id="btnAnterior" onclick="cambiarHoja(-1)">◀</button>
+            
+            <div class="navegacion-hojas">
+                Hoja <input type="number" id="inputHojaActual" class="input-hoja" value="1" min="1" max="50000" onchange="saltarAHoja()">
+            </div>
+            
+            <button class="btn-nav" id="btnSiguiente" onclick="cambiarHoja(1)">▶</button>
+            
+            <button class="btn-print" onclick="window.print()" style="margin-left: 15px;">🖨️ Imprimir Esta Hoja</button>
+        </div>
+        
+        <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+
+        <div class="panel-config" style="margin-bottom: 0;">
+            <div class="input-group">
+                <label>Imprimir Rango - Desde:</label>
+                <input type="number" id="printStart" class="input-hoja" value="1" min="1" max="50000">
+                <label>Hasta:</label>
+                <input type="number" id="printEnd" class="input-hoja" value="5" min="1" max="50000">
+            </div>
+            <button class="btn-print-rango" id="btnImprimirRango" onclick="imprimirRangoHojas()">
+                🖨️ Imprimir Rango
+            </button>
+        </div>
+    </div>
+
+    <div id="zonaImpresion"></div>
+
+    <div id="easterEgg" class="modal-secreto">
+        <div class="modal-contenido">
+            <h3 style="margin-top:0; color:#333; font-size: 22px;">🤫 ¡Nota de los Desarrolladores!</h3>
+            <p style="color:#555; font-size:15px; line-height:1.6;">
+                Entre tú y yo: este generador se armó casi a ciegas, inventando en el camino y con la magia de Gemini. Así que nos lavamos las manos... ¡cruzamos los dedos para que la impresora coopere y cuadre perfecto en el label! 🤖✨
+            </p>
+            <button onclick="document.getElementById('easterEgg').style.display='none'" style="background:#0056b3; margin-top:15px; width: 100%;">Entendido, a rezar</button>
+        </div>
+    </div>
+
+    <script>
+        const zonaImpresion = document.getElementById('zonaImpresion');
+        
+        // LOS 5 INTOCABLES
+        const prefijoFijo = "53709"; 
+        // EL ODÓMETRO (Empieza en 01056000)
+        const secuenciaInicioFija = 1056000; 
+        
+        const cantidadPorHoja = 60; 
+        const maxHojas = 50000; 
+        
+        let hojaActual = 1;
+
+        function calcularDigitoVerificador(numeroBase) {
+            let suma = 0;
+            let multiplicar = true; 
+            for (let i = numeroBase.length - 1; i >= 0; i--) {
+                let digito = parseInt(numeroBase.charAt(i), 10);
+                if (multiplicar) {
+                    digito *= 2;
+                    if (digito > 9) digito -= 9;
+                }
+                suma += digito;
+                multiplicar = !multiplicar;
+            }
+            return ((10 - (suma % 10)) % 10).toString();
+        }
+
+        function cambiarHoja(direccion) {
+            let nuevaHoja = hojaActual + direccion;
+            if (nuevaHoja >= 1 && nuevaHoja <= maxHojas) {
+                hojaActual = nuevaHoja;
+                document.getElementById('inputHojaActual').value = hojaActual;
+                generarEtiquetasVistaNormal();
+            }
+        }
+
+        function saltarAHoja() {
+            let input = document.getElementById('inputHojaActual');
+            let valorIngresado = parseInt(input.value);
+            
+            if (isNaN(valorIngresado) || valorIngresado < 1 || valorIngresado > maxHojas) {
+                alert(`Por favor, ingresa un número de hoja entre 1 y ${maxHojas}.`);
+                input.value = hojaActual; 
+            } else {
+                hojaActual = valorIngresado;
+                generarEtiquetasVistaNormal();
+            }
+        }
+
+        function actualizarInterfaz() {
+            document.getElementById('inputHojaActual').value = hojaActual;
+            document.getElementById('btnAnterior').disabled = (hojaActual === 1);
+            document.getElementById('btnSiguiente').disabled = (hojaActual === maxHojas);
+        }
+
+        function crearEstructuraHoja(numeroDeHoja, prefijoId) {
+            let divHoja = document.createElement('div');
+            divHoja.className = 'hoja';
+
+            let divCuadricula = document.createElement('div');
+            divCuadricula.className = 'cuadricula';
+
+            let inputTitulo = document.getElementById('ajusteTituloSize');
+            let tituloSize = inputTitulo ? parseFloat(inputTitulo.value) : 7.5;
+
+            for(let i = 0; i < cantidadPorHoja; i++) {
+                let divEtiqueta = document.createElement('div');
+                divEtiqueta.className = 'etiqueta';
+                
+                let divBiblio = document.createElement('div');
+                divBiblio.className = 'texto-biblioteca';
+                divBiblio.textContent = "USC- BIBLIOTECA MMT GUEVARA";
+                divBiblio.style.fontSize = tituloSize + "pt"; 
+                divEtiqueta.appendChild(divBiblio);
+
+                let divBarcode = document.createElement('div');
+                divBarcode.className = 'barcode-container';
+                
+                let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+                svg.id = `barcode-${prefijoId}-${numeroDeHoja}-${i}`; 
+                
+                divBarcode.appendChild(svg);
+                divEtiqueta.appendChild(divBarcode);
+                divCuadricula.appendChild(divEtiqueta);
+            }
+
+            divHoja.appendChild(divCuadricula);
+            return divHoja;
+        }
+
+        function dibujarCodigosHoja(numeroDeHoja, prefijoId) {
+            // Calculamos el incremento del odómetro
+            let inicioSecuenciaHoja = secuenciaInicioFija + ((numeroDeHoja - 1) * cantidadPorHoja);
+
+            let inputW = document.getElementById('ajusteWidth');
+            let inputH = document.getElementById('ajusteHeight');
+            let inputF = document.getElementById('ajusteFontSize');
+
+            let userWidth = inputW ? parseFloat(inputW.value) : 1.4;
+            let userHeight = inputH ? parseInt(inputH.value) : 28;
+            let userFontSize = inputF ? parseFloat(inputF.value) : 11;
+
+            for(let i = 0; i < cantidadPorHoja; i++) {
+                let secuenciaActual = inicioSecuenciaHoja + i;
+                
+                // Aseguramos que el odómetro siempre tenga 8 dígitos
+                let secuenciaPadded = secuenciaActual.toString().padStart(8, '0');
+                
+                // Unimos los 5 intocables con los 8 del odómetro (Base de 13)
+                let baseSinCheck = prefijoFijo + secuenciaPadded;
+                let checkDigit = calcularDigitoVerificador(baseSinCheck);
+                
+                // Código final de 14 dígitos exactos
+                let valorCodigo = baseSinCheck + checkDigit; 
+                
+                // Formato de corte exacto: 1, 4, 5, 4
+                let valorTexto = valorCodigo.substring(0,1) + " " + 
+                                 valorCodigo.substring(1,5) + " " + 
+                                 valorCodigo.substring(5,10) + " " + 
+                                 valorCodigo.substring(10,14);
+
+                JsBarcode(`#barcode-${prefijoId}-${numeroDeHoja}-${i}`, valorCodigo, {
+                    format: "CODE128",
+                    text: valorTexto,
+                    width: userWidth,      
+                    height: userHeight,     
+                    displayValue: true,
+                    fontSize: userFontSize, 
+                    fontOptions: "bold", 
+                    margin: 0
+                });
+            }
+        }
+
+        function generarEtiquetasVistaNormal() {
+            zonaImpresion.innerHTML = '';
+            let estructura = crearEstructuraHoja(hojaActual, "vista");
+            zonaImpresion.appendChild(estructura);
+            dibujarCodigosHoja(hojaActual, "vista");
+            actualizarInterfaz();
+        }
+
+        function imprimirRangoHojas() {
+            let start = parseInt(document.getElementById('printStart').value);
+            let end = parseInt(document.getElementById('printEnd').value);
+
+            if (isNaN(start) || isNaN(end) || start < 1 || end > maxHojas) {
+                alert(`Asegúrate de poner números válidos.`);
+                return;
+            }
+            if (start > end) {
+                alert("La hoja de inicio no puede ser mayor que la hoja final.");
+                return;
+            }
+
+            let cantidadHojas = (end - start) + 1;
+            
+            if (cantidadHojas > 100) {
+                if (!confirm(`Estás a punto de generar ${cantidadHojas} hojas de cantazo. Esto puede tardar un poco. ¿Deseas continuar?`)) {
+                    return;
+                }
+            }
+
+            const btn = document.getElementById('btnImprimirRango');
+            btn.innerHTML = `⏳ Generando ${cantidadHojas} hoja(s)...`;
+            btn.disabled = true;
+            document.body.style.cursor = 'wait';
+
+            setTimeout(() => {
+                zonaImpresion.innerHTML = ''; 
+                
+                for(let i = start; i <= end; i++) {
+                    let estructura = crearEstructuraHoja(i, "impresion");
+                    zonaImpresion.appendChild(estructura);
+                    dibujarCodigosHoja(i, "impresion");
+                }
+
+                setTimeout(() => {
+                    document.body.style.cursor = 'default';
+                    window.print();
+                    
+                    generarEtiquetasVistaNormal();
+                    btn.innerHTML = '🖨️ Imprimir Rango';
+                    btn.disabled = false;
+                }, 800); 
+            }, 100);
+        }
+
+        // --- LÓGICA DEL EASTER EGG ---
+        let clicsEnTitulo = 0;
+        let temporizadorClics;
+
+        document.getElementById('tituloPrincipal').addEventListener('click', function() {
+            clicsEnTitulo++;
+            
+            if (clicsEnTitulo === 3) {
+                document.getElementById('easterEgg').style.display = 'flex';
+                clicsEnTitulo = 0;
+            }
+
+            clearTimeout(temporizadorClics);
+            temporizadorClics = setTimeout(() => {
+                clicsEnTitulo = 0;
+            }, 1000);
+        });
+
+        document.addEventListener("DOMContentLoaded", () => {
+            generarEtiquetasVistaNormal();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+#!/usr/bin/env node
+/**
+ * Construye tools/marc-en-to-es-glossary.json para cadenas EN sin par ES.
+ * Usa helpers inversos + MyMemory (EN→ES) con pausa entre peticiones.
+ */
+"use strict";
+
+const fs = require("fs");
+const path = require("path");
+
+const ROOT = path.join(__dirname, "..");
+const STRINGS = path.join(__dirname, "marc-en-strings-to-translate.json");
+const HELPERS = path.join(__dirname, "marc-i18n-en-helpers.json");
+const OUT = path.join(__dirname, "marc-en-to-es-glossary.json");
+
+const EN_TO_ES_FALLBACK = {
+    Unknown: "Desconocido",
+    "Not applicable": "No aplicable",
+    Unspecified: "No especificado",
+    Other: "Otro",
+    Undefined: "Indefinido",
+    "No attempt to code": "Sin intento de codificar",
+    "Not defined": "No definido",
+    "None of the following": "Ninguna de las siguientes",
+    "No information provided": "Sin información",
+    Private: "Privado",
+    "Not private": "No privado",
+    Linkage: "Enlace",
+    "Materials specified": "Materiales especificados",
+    "Field link and sequence number": "Enlace de campo y número de secuencia",
+    "Institution to which field applies": "Institución a la que aplica el campo",
+    Address: "Dirección",
+    "Accession number": "Número de acceso",
+    Owner: "Propietario",
+    Extent: "Extensión",
+    "Type of unit": "Tipo de unidad",
+    MeSH: "MeSH",
+    Source: "Fuente",
+    Relationship: "Relación",
+    Medium: "Medio",
+    Title: "Título",
+    Note: "Nota",
+    Name: "Nombre",
+    Country: "País",
+    Hours: "Horario",
+    Authorization: "Autorización",
+    Jurisdiction: "Jurisdicción",
+    Abstract: "Resumen",
+    Version: "Versión",
+    Affiliation: "Afiliación",
+    Numeration: "Numeración",
+    "Uniform title": "Título uniforme",
+    "Subordinate unit": "Unidad subordinada",
+    "No added entry": "Sin entrada secundaria",
+    "Added entry": "Entrada secundaria",
+    "Remainder of title": "Resto del título",
+    "Display note": "Mostrar nota",
+    "Public note": "Nota pública",
+    "Nonpublic note": "Nota no pública",
+    "Item number": "Número de ítem",
+    "General subdivision": "Subdivisión general",
+    "Form subdivision": "Submotion de forma",
+    "Chronological subdivision": "Submotion cronológica",
+    "Geographic subdivision": "Submotion geográfica",
+};
+
+const MANUAL = {
+    "Authority record control number or standard number":
+        "Número de control de registro de autoridad o número normalizado",
+    "Real World Object URI": "URI de objeto del mundo real",
+    "Data provenance": "Procedencia de los datos",
+    "Source of heading or term": "Fuente de encabezamiento o término",
+    "Name of part/section of a work": "Nombre de parte/sección de una obra",
+    "No display constant generated": "Sin constante de visualización generada",
+    "Form subheading": "Subencabezamiento de forma",
+    "Date of a work": "Fecha de una obra",
+    "Language of a work": "Idioma de una obra",
+    "Number of part/section of a work": "Número de parte/sección de una obra",
+    "Title of a work": "Título de una obra",
+    "Relator term": "Término de relator",
+    "Source of term": "Fuente del término",
+    "Medium of performance for music": "Medio de interpretación para música",
+    "Arranged statement for music": "Indicación de arreglo para música",
+    "Key for music": "Tonalidad para música",
+    "International Standard Serial Number": "Número international normalizado de publicación seriada (ISSN)",
+    "Location of meeting": "Lugar de la reunión",
+    "Date of meeting or treaty signing": "Fecha de reunión o firma de tratado",
+    "Number of part/section/meeting": "Número de parte/sección/reunión",
+    "Relationship information": "Información de relación",
+    "Date of treaty signing": "Fecha de firma de tratado",
+    "Source of information": "Fuente de información",
+    "Source specified in subfield $2": "Fuente especificada en subcampo $2",
+    "Titles and other words associated with a name":
+        "Títulos y otras palabras asociadas a un nombre",
+    "Attribution qualifier": "Calificador de atribución",
+    "Meeting name or jurisdiction name as entry element":
+        "Nombre de reunión o jurisdicción como elemento de entrada",
+    "Name of meeting following jurisdiction name entry element":
+        "Nombre de reunión posterior al elemento de entrada de jurisdicción",
+    "Qualifying information": "Información calificadora",
+    "No nonfiling characters": "Sin caracteres iniciales no considerados",
+    "Date or sequential designation": "Fecha o designación secuencial",
+    "Presentation format": "Formato de presentación",
+    "File size": "Tamaño de archivo",
+    "ISO country code": "Código de país ISO",
+    "MARC country code": "Código de país MARC",
+    "Uniform Resource Identifier": "Identificador uniforme de recursos (URI)",
+    "Miscellaneous information": "Información miscelánea",
+    "Supplying agency": "Agencia suministradora",
+    "International Standard Book Number": "ISBN",
+    "LC infantil": "LC infantil",
+    "Copy information": "Información de ejemplar",
+    "Assigning agency": "Agencia asignadora",
+};
+
+function sleep(ms) {
+    return new Promise(function (r) {
+        setTimeout(r, ms);
+    });
+}
+
+async function translateApi(text) {
+    const url =
+        "https://api.mymemory.translated.net/get?q=" +
+        encodeURIComponent(text.slice(0, 450)) +
+        "&langpair=en|es";
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    if (data.responseStatus !== 200) throw new Error(data.responseDetails || "API error");
+    return data.responseData.translatedText;
+}
+
+async function main() {
+    const strings = JSON.parse(fs.readFileSync(STRINGS, "utf8"));
+    const helpers = JSON.parse(fs.readFileSync(HELPERS, "utf8"));
+    const reverse = {};
+    Object.keys(helpers.exact || {}).forEach(function (es) {
+        reverse[helpers.exact[es]] = es;
+    });
+
+    const glossary = fs.existsSync(OUT) ? JSON.parse(fs.readFileSync(OUT, "utf8")) : {};
+    let added = 0;
+    let skipped = 0;
+
+    for (let i = 0; i < strings.length; i++) {
+        const en = strings[i];
+        if (glossary[en]) {
+            skipped++;
+            continue;
+        }
+        if (MANUAL[en]) {
+            glossary[en] = MANUAL[en];
+            added++;
+            continue;
+        }
+        if (EN_TO_ES_FALLBACK[en]) {
+            glossary[en] = EN_TO_ES_FALLBACK[en];
+            added++;
+            continue;
+        }
+        if (reverse[en]) {
+            glossary[en] = reverse[en];
+            added++;
+            continue;
+        }
+        try {
+            glossary[en] = await translateApi(en);
+            added++;
+            if (i % 20 === 0) console.log(i + 1 + "/" + strings.length, en.slice(0, 50));
+            await sleep(350);
+        } catch (e) {
+            console.warn("FAIL:", en.slice(0, 60), e.message);
+            glossary[en] = en;
+        }
+    }
+
+    fs.writeFileSync(OUT, JSON.stringify(glossary, null, 2) + "\n", "utf8");
+    console.log("Escrito:", OUT, "nuevas:", added, "omitidas:", skipped, "total:", Object.keys(glossary).length);
+}
+
+main().catch(function (e) {
+    console.error(e);
+    process.exit(1);
+});

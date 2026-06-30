@@ -1,0 +1,60 @@
+Módulo de catalogación MARC21 — versión 4 (paquete de distribución)
+
+Este paquete corresponde al estado actual de catalogacion-v2.
+Contiene todo lo necesario para usar el editor sin depender de otras carpetas del proyecto.
+
+────────────────────────────────────────────────────────────
+ARCHIVOS OBLIGATORIOS (deben ir juntos)
+────────────────────────────────────────────────────────────
+
+  - index.html
+  - logo-marc.png
+  - marc-cat-i18n-es.js
+  - marc-cat-i18n-en.js
+  - marc-cat-marc21-field-links.js
+
+Cómo abrir: doble clic en "index.html".
+
+No separe ni renombre los archivos al copiar o enviar el paquete.
+
+────────────────────────────────────────────────────────────
+QUÉ INCLUYE ESTA VERSIÓN
+────────────────────────────────────────────────────────────
+
+  - Editor MARC21 con vistas Sencilla, MARC y Texto plano
+  - Logo MARC en la cabecera (logo-marc.png; no cambia con ES/EN)
+  - Diccionario español (ES) e inglés (EN) con toggle en la barra superior
+  - Enlaces ↗ a documentación MARC21 (loc.gov) por campo
+  - Atajos de teclado (botón Shortcuts): Shift+Enter añade subcampo, etc.
+  - Botón + de subcampos alineado a la derecha (≤3 subcampos) o abajo (≥4)
+
+Fallback: si falta una clave EN, se muestra el texto en español.
+
+────────────────────────────────────────────────────────────
+SUPLEMENTO (solo referencia / mantenimiento i18n)
+────────────────────────────────────────────────────────────
+
+  - build_marc_en_to_es_glossary.txt
+
+Copia en texto del script tools/build_marc_en_to_es_glossary.js del repositorio.
+Sirve para construir el glosario EN→ES al ampliar traducciones; no se carga
+en el navegador. Para ejecutarlo hace falta Node.js y la carpeta tools/ del
+proyecto completo (marc-en-strings-to-translate.json, marc-i18n-en-helpers.json).
+
+────────────────────────────────────────────────────────────
+REGENERAR DICCIONARIOS (proyecto completo, no en este paquete)
+────────────────────────────────────────────────────────────
+
+  node tools/convert_marc_i18n_es_to_js.js
+  node tools/convert_marc_i18n_en_to_js.js
+  node tools/gen_marc21_field_links_js.js
+
+Fuentes: tools/marc-i18n-es.txt, tools/marc-i18n-en.txt
+
+────────────────────────────────────────────────────────────
+NOTAS
+────────────────────────────────────────────────────────────
+
+  - catalogacion-v3 (IA) y catalogacion-v1 quedan aparte; v4 = línea v2 estable.
+  - Los archivos marc-cat-pdf-tags.js y marc-cat-pdf-specs.js están obsoletos;
+    no forman parte de este paquete.

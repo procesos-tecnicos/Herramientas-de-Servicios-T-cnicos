@@ -1,0 +1,3403 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Estadísticas de Catalogación</title>
+    <link rel="icon" href="favicon-estadisticas-mrc.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="logo-estadisticas-mrc.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/es.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/exceljs/dist/exceljs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #0f172a; }
+
+        .step-panel  { display: none; }
+        .step-panel.active { display: block; animation: fadeIn .25s ease; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+
+        /* Calendar */
+        .day-cell { width:38px; height:38px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+                    font-size:.78rem; font-weight:600; cursor:pointer; transition:all .12s; border:2px solid transparent;
+                    margin:auto; user-select:none; }
+        .day-cell.enabled      { background:#dcfce7; color:#15803d; border-color:#86efac; }
+        .day-cell.enabled:hover { background:#bbf7d0; }
+        .day-cell.disabled-day { background:#fee2e2; color:#b91c1c; border-color:#fca5a5; text-decoration:line-through; }
+        .day-cell.disabled-day:hover { background:#fecaca; }
+        .day-cell.out-range    { background:#f9fafb; color:#d1d5db; cursor:default; border-color:transparent; }
+
+        /* Result tabs */
+        .rtab { transition:color .15s; cursor:pointer; }
+        .rtab.active { border-bottom:2px solid #2563eb !important; color:#1d4ed8 !important; font-weight:600; }
+        .rtab-panel { display:none; }
+        .rtab-panel.active { display:block; animation:fadeIn .2s ease; }
+
+        /* Modern cards */
+        .panel-card {
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 26px rgba(37, 99, 235, 0.06), 0 2px 8px rgba(15, 23, 42, 0.04);
+        }
+        .metric-card {
+            border-top-width: 2px !important;
+            box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+        }
+        .metric-blue { border-top-color: #3b82f6 !important; }
+        .metric-indigo { border-top-color: #6366f1 !important; }
+        .metric-purple { border-top-color: #a855f7 !important; }
+        .metric-green { border-top-color: #22c55e !important; }
+        .metric-amber { border-top-color: #f59e0b !important; }
+        .metric-slate { border-top-color: #64748b !important; }
+
+        /* Tooltip */
+        .tt-wrap { position: relative; display: inline-flex; }
+        .tt-wrap::after {
+            content: attr(data-tooltip);
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%) translateY(8px);
+            bottom: calc(100% + 8px);
+            background: #0f172a;
+            color: #f8fafc;
+            font-size: 11px;
+            line-height: 1.25;
+            padding: 8px 10px;
+            border-radius: 8px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .18s ease, transform .18s ease;
+            z-index: 40;
+        }
+        .tt-wrap:hover::after {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Upload dropzone — neutro (sin tonos error/vino) */
+        .upload-dropzone {
+            border: 2px dashed #cbd5e1;
+            background: #f8fafc;
+            transition: all .2s ease;
+        }
+        .upload-dropzone.dragover {
+            border-color: #64748b;
+            background: #f1f5f9;
+        }
+
+        /* Wine palette overrides (replaces blue/sky accents) */
+        :root {
+            --wine-50: #f8f4f5;
+            --wine-100: #f1e7ea;
+            --wine-300: #d8b8c0;
+            --wine-400: #c78998;
+            --wine-500: #9e3a56;
+            --wine-600: #800019;
+            --wine-700: #670015;
+            --wine-900: #3d000d;
+        }
+        .bg-blue-50, .bg-sky-50 { background-color: var(--wine-50) !important; }
+        .bg-blue-600, .bg-sky-600, .bg-sky-500 { background-color: var(--wine-600) !important; }
+        .bg-blue-700, .hover\:bg-blue-700:hover, .hover\:bg-sky-700:hover { background-color: var(--wine-700) !important; }
+        .text-blue-100 { color: #fbcfe8 !important; }
+        .text-blue-500 { color: var(--wine-500) !important; }
+        .text-blue-600, .hover\:text-blue-600:hover { color: var(--wine-600) !important; }
+        .text-blue-700 { color: var(--wine-700) !important; }
+        .text-blue-900 { color: var(--wine-900) !important; }
+        .border-blue-100 { border-color: #fbcfe8 !important; }
+        .border-blue-600, .border-sky-500 { border-color: var(--wine-600) !important; }
+        .hover\:border-blue-300:hover, .hover\:border-sky-300:hover { border-color: var(--wine-300) !important; }
+        .focus\:ring-blue-400:focus { --tw-ring-color: var(--wine-400) !important; }
+        .focus\:border-blue-400:focus { border-color: var(--wine-400) !important; }
+
+        /* Checkboxes modal export (vino) */
+        .modal-export-check {
+            accent-color: #800019;
+            width: 1rem;
+            height: 1rem;
+            cursor: pointer;
+        }
+        .modal-export-check:focus {
+            outline: 2px solid rgba(128, 0, 25, 0.35);
+            outline-offset: 2px;
+        }
+
+        /* Visión HTML publicada: sin barra de pasos ni botón de exportar visión */
+        html.snapshot-report #step-nav-bar,
+        html.snapshot-report #btn-exportar-vision-html { display: none !important; }
+        html.snapshot-report .hide-on-snapshot-report { display: none !important; }
+
+        /* Última actualización (solo visión HTML exportada) */
+        .report-generated-badge {
+            display: none;
+            text-align: right;
+            flex-shrink: 0;
+            max-width: 14rem;
+            padding: 0.35rem 0.75rem;
+            border-radius: 0.5rem;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.08);
+        }
+        html.snapshot-report .report-generated-badge.is-populated {
+            display: block;
+        }
+        .report-generated-badge-label {
+            display: block;
+            font-size: 0.65rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.2;
+        }
+        .report-generated-badge time {
+            display: block;
+            margin-top: 0.15rem;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            color: rgba(255, 255, 255, 0.95);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.35;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 min-h-screen">
+
+<!-- ── HEADER ── -->
+<header class="bg-blue-700 shadow-lg">
+    <div class="max-w-6xl mx-auto px-6 py-4 flex items-start justify-between gap-4">
+        <div class="min-w-0">
+            <h1 class="text-2xl font-bold text-white">Estadísticas de Catalogación</h1>
+            <p class="text-blue-100 text-sm mt-0.5">Servicios Técnicos</p>
+        </div>
+        <div id="reportGeneratedBadge" class="report-generated-badge" aria-live="polite">
+            <span class="report-generated-badge-label">Última actualización</span>
+            <time id="reportGeneratedAt" datetime=""></time>
+        </div>
+    </div>
+</header>
+
+<!-- ── STEP NAV ── -->
+<div id="step-nav-bar" class="bg-white border-b shadow-sm sticky top-0 z-20">
+    <div class="max-w-6xl mx-auto px-6 flex flex-wrap items-center justify-between gap-2">
+        <nav class="flex flex-wrap">
+            <button onclick="tryGoStep(1)" id="snav-1" class="flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-700">
+                <span id="sicon-1" class="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">1</span>Datos
+            </button>
+            <button onclick="tryGoStep(2)" id="snav-2" class="flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 pointer-events-none">
+                <span id="sicon-2" class="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">2</span>Calendario
+            </button>
+            <button onclick="tryGoStep(3)" id="snav-3" class="flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-400 pointer-events-none">
+                <span id="sicon-3" class="w-6 h-6 rounded-full bg-gray-300 text-white flex items-center justify-center text-xs font-bold">3</span>Resultados
+            </button>
+        </nav>
+        <button type="button" id="btn-exportar-vision-html" onclick="descargarVisionResultadosHTML()"
+            class="shrink-0 text-sm font-semibold px-4 py-2 rounded-xl border-2 border-blue-600 text-blue-700 hover:bg-blue-50 transition">
+            Descargar visión HTML (solo resultados)
+        </button>
+    </div>
+</div>
+
+<main class="max-w-6xl mx-auto px-6 py-8 space-y-6">
+
+<!-- ══════════════════════════ STEP 1: DATOS ══════════════════════════ -->
+<div id="step-1" class="step-panel active">
+    <div class="bg-white rounded-2xl panel-card p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-1">1. Ingresa tus datos</h2>
+        <p class="text-gray-500 text-sm mb-4">Sube tu archivo Excel con ambas hojas y los datos se cargarán automáticamente.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6 text-xs">
+            <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-blue-700">
+                <strong>Tabla A — Registros Bibliográficos</strong><br>
+                Se extraen: <em>Clasificación · Colección · ¿Nuevo Registro Bibliográfico? · Fecha de catalogación</em>
+            </div>
+            <div class="bg-purple-50 border border-purple-100 rounded-xl p-3 text-purple-700">
+                <strong>Tabla B — Ejemplares Añadidos (Existentes)</strong><br>
+                Se extraen: <em>Clasificación · Colección · Fecha</em>
+            </div>
+        </div>
+
+        <div id="uploadDropzone" class="mb-5 upload-dropzone rounded-xl p-5">
+            <input id="excelAmbas" type="file" accept=".xlsx,.xls,.csv" onchange="cargarExcelAutomatico('excelAmbas')" class="hidden">
+            <label for="excelAmbas" class="block cursor-pointer text-center">
+                <p class="text-sm font-semibold text-gray-800">SUBIR archivo Excel</p>
+                <p class="text-xs text-gray-500 mt-1">Arrastra y suelta aquí o haz clic para elegir en tu PC</p>
+                <p id="uploadFileName" class="text-xs text-gray-400 mt-2">Sin archivo seleccionado</p>
+            </label>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-2">
+                <label class="block font-semibold text-gray-700">Tabla A: Registros Bibliográficos</label>
+                <textarea id="tablaA"
+                    class="w-full h-56 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-xs font-mono resize-none"
+                    placeholder="#&#9;Número de Control&#9;Título&#9;Clasificación&#9;Colección&#9;Formato&#9;Tipo de Catalogación&#9;¿Nuevo Registro Bibliográfico?&#9;Fecha de catalogación&#9;Fecha de cotejo&#9;Comentarios&#10;1&#9;2023-001&#9;Título&#9;616.89 ALV&#9;General&#9;Libro&#9;CIP&#9;Sí&#9;9 de diciembre de 2025&#9;&#9;"></textarea>
+                <p id="countLineA" class="text-xs text-green-700 font-medium mt-1">Cantidad registros bibliográficos: 0</p>
+            </div>
+            <div class="space-y-2">
+                <label class="block font-semibold text-gray-700">Tabla B: Ejemplares Añadidos (Existentes)</label>
+                <textarea id="tablaB"
+                    class="w-full h-56 p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 text-xs font-mono resize-none"
+                    placeholder="#&#9;Número de Control&#9;Título&#9;Especialidad&#9;Colección&#9;Clasificación&#9;Item ID&#9;Formato&#9;Fecha&#9;Comentarios&#10;1&#9;2023-001&#9;Título&#9;&#9;General&#9;616.89 ALV&#9;IT001&#9;Libro&#9;10 de diciembre de 2025&#9;"></textarea>
+                <p id="countLineB" class="text-xs text-green-700 font-medium mt-1">Cantidad registros añadidos: 0</p>
+            </div>
+        </div>
+
+        <div class="flex justify-end mt-6">
+            <button onclick="goStep(2)" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition flex items-center gap-2 shadow-sm">
+                Continuar al Calendario
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════ STEP 2: CALENDARIO ══════════════════════════ -->
+<div id="step-2" class="step-panel">
+    <div class="bg-white rounded-2xl panel-card p-8">
+        <h2 class="text-xl font-bold text-gray-800 mb-1">2. Configura el calendario</h2>
+        <p class="text-gray-500 text-sm mb-1"><span class="font-medium text-gray-600">Editor</span> — periodo de análisis. Los fines de semana se excluyen automáticamente. Haz clic en días o semanas para inhabilitarlos.</p>
+        <p class="text-gray-500 text-xs mb-4">Inicio, fin, año y mes siguen activos. <strong class="font-medium text-gray-700">Rangos</strong>: clic o toque en la franja superior (o al abrir el calendario / cambiar fechas). <strong class="font-medium text-gray-700">Por meses</strong>: clic o toque en la franja inferior o en los desplegables (antes de elegir), o al cambiar año/mes. La fila resaltada indica el modo activo.</p>
+
+        <div id="s2-row-manual" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 rounded-xl border-2 p-3 transition-all duration-150 opacity-100 border-blue-300 cursor-pointer">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha inicio</label>
+                <input type="text" id="s2-date-start" class="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400" placeholder="Inicio" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha fin</label>
+                <input type="text" id="s2-date-end" class="w-full p-3 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-400 focus:border-blue-400" placeholder="Fin" readonly>
+            </div>
+        </div>
+        <div id="s2-row-atajos" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 rounded-xl border-2 p-3 transition-all duration-150 opacity-60 border-gray-200 cursor-pointer">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Año</label>
+                <select id="s2-quick-year" class="w-full p-3 border border-gray-200 rounded-xl text-sm" onchange="onQuickYearSelectUser('s2')"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Mes</label>
+                <select id="s2-quick-month" class="w-full p-3 border border-gray-200 rounded-xl text-sm" onchange="onQuickMonthApply('s2')"></select>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mb-4">Por defecto se inhabilitan los laborables en navidad (22 dic 2025 – 6 ene 2026) y la semana 30 mar – 3 abr 2026; puedes volver a habilitarlos en la grilla.</p>
+
+        <div id="calGrid" class="hidden">
+            <div class="flex items-center justify-between mb-3">
+                <h3 class="font-semibold text-gray-700">Días hábiles del período</h3>
+                <button onclick="resetDays()" class="text-xs text-gray-400 hover:text-red-500 underline transition">Limpiar inhabilitados</button>
+            </div>
+            <div class="flex flex-wrap gap-4 mb-4 text-xs text-gray-500">
+                <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-4 rounded bg-green-100 border-2 border-green-300"></span>Día hábil — clic para inhabilitar</span>
+                <span class="flex items-center gap-1.5"><span class="inline-block w-4 h-4 rounded bg-red-100 border-2 border-red-300"></span>Inhabilitado — clic para restaurar</span>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-gray-100">
+                <table class="w-full text-center">
+                    <thead class="bg-gray-50">
+                        <tr class="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                            <th class="py-3 px-4 text-left">Semana</th>
+                            <th class="py-3 w-12">Lun</th><th class="py-3 w-12">Mar</th>
+                            <th class="py-3 w-12">Mié</th><th class="py-3 w-12">Jue</th>
+                            <th class="py-3 w-12">Vie</th>
+                            <th class="py-3 px-4 text-right">Semana completa</th>
+                        </tr>
+                    </thead>
+                    <tbody id="calBody" class="divide-y divide-gray-50"></tbody>
+                </table>
+            </div>
+            <div class="mt-4 p-4 bg-blue-50 rounded-xl border border-blue-100 flex items-center justify-between flex-wrap gap-2">
+                <p class="text-sm text-blue-700">Días laborales válidos: <strong id="sumValid" class="text-blue-900 text-lg ml-1">0</strong></p>
+                <p id="sumDetail" class="text-xs text-blue-500"></p>
+            </div>
+        </div>
+
+        <div class="flex justify-between mt-8">
+            <button onclick="goStep(1)" class="flex items-center gap-2 px-6 py-3 rounded-xl border border-gray-200 hover:border-gray-300 text-gray-500 hover:text-gray-700 font-medium transition">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                Volver a Datos
+            </button>
+            <button onclick="generateAndGo()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-xl transition flex items-center gap-2 shadow-sm">
+                Generar Análisis
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════ STEP 3: RESULTADOS ══════════════════════════ -->
+<div id="step-3" class="step-panel">
+
+    <!-- Modo de análisis + Ajustar periodo (misma barra: izq. textos · centro botón · der. modo) -->
+    <div class="bg-white rounded-2xl panel-card p-5">
+        <div class="grid w-full grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-4 items-center">
+            <div class="text-left justify-self-start min-w-0">
+                <h3 class="font-bold text-gray-800">Modo de análisis</h3>
+                <p class="text-xs text-gray-500 mt-0.5">Cambia el denominador del promedio diario</p>
+            </div>
+            <div class="flex justify-center justify-self-center w-full lg:w-auto">
+                <div class="flex rounded-xl border border-gray-200 overflow-hidden text-sm font-semibold shadow-sm shrink-0">
+                    <button type="button" onclick="handleAjustarPeriodoClick()"
+                        class="px-5 py-2.5 bg-white text-gray-600 hover:bg-gray-50 transition flex items-center gap-2">
+                        <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Ajustar periodo
+                    </button>
+                </div>
+            </div>
+            <div class="flex justify-end justify-self-end w-full lg:w-auto lg:min-w-0">
+                <div class="flex rounded-xl border border-gray-200 overflow-hidden text-sm font-semibold shadow-sm w-full sm:w-auto" id="modeToggle">
+                    <button id="mode-active" onclick="setMode('active')" class="flex-1 sm:flex-none px-5 py-2.5 bg-blue-600 text-white transition">Días activos</button>
+                    <button id="mode-labor"  onclick="setMode('labor')"  class="flex-1 sm:flex-none px-5 py-2.5 bg-white text-gray-500 hover:bg-gray-50 transition">Todos los días laborales</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category selector -->
+    <div class="bg-white rounded-2xl panel-card p-5">
+        <h3 class="font-bold text-gray-800 mb-3">Analizar categoría</h3>
+        <div class="flex flex-wrap gap-2" id="catSelector">
+            <button onclick="setCat('todos')" data-cat="todos" class="cat-pill px-4 py-2 rounded-xl border border-blue-600 bg-blue-600 text-white text-sm font-medium transition">Todos</button>
+            <span class="tt-wrap" data-tooltip="Registros bibliográficos originales creados en el periodo.">
+                <button onclick="setCat('nuevo')" title="Registros bibliográficos originales creados en el periodo." data-cat="nuevo" class="cat-pill px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:border-blue-300 transition">Nuevos Bibliográficos</button>
+            </span>
+            <span class="tt-wrap" data-tooltip="Ejemplares añadidos bajo registros bibliográficos propios.">
+                <button onclick="setCat('propio')" title="Ejemplares añadidos bajo registros bibliográficos propios." data-cat="propio" class="cat-pill px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:border-blue-300 transition">Ejemplares Propios</button>
+            </span>
+            <span class="tt-wrap" data-tooltip="Ejemplares añadidos bajo registros bibliográficos ya existentes en el catálogo.">
+                <button onclick="setCat('existente')" title="Ejemplares añadidos bajo registros bibliográficos ya existentes en el catálogo." data-cat="existente" class="cat-pill px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:border-blue-300 transition">Ejemplares Existentes</button>
+            </span>
+            <span class="tt-wrap" data-tooltip="Suma total de ejemplares añadidos (propios + existentes).">
+                <button onclick="setCat('anadidos')" title="Suma total de ejemplares añadidos (propios + existentes)." data-cat="anadidos" class="cat-pill px-4 py-2 rounded-xl border border-gray-200 text-gray-600 text-sm font-medium hover:border-blue-300 transition">Total de Ejemplares</button>
+            </span>
+        </div>
+    </div>
+
+    <!-- Stats grid (8 cards) — Días Activos + Días Laborales siempre juntos -->
+    <div id="statsCardsBoard" class="p-6 md:p-10 rounded-2xl bg-slate-100/80 overflow-visible">
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl metric-card metric-blue p-5 text-center col-span-2 md:col-span-1 overflow-visible">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Total</p>
+            <p class="text-4xl font-bold text-gray-800 mt-1" id="sTotal">—</p>
+            <p class="text-xs text-gray-400 mt-1 leading-snug">registros</p>
+        </div>
+        <div class="col-span-2 grid grid-cols-2 gap-4">
+            <div class="bg-white rounded-2xl metric-card metric-indigo p-5 text-center overflow-visible">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Días Activos</p>
+                <p class="text-4xl font-bold text-gray-800 mt-1" id="sDaysActive">—</p>
+                <p class="text-xs text-gray-400 mt-1 leading-snug">con actividad</p>
+            </div>
+            <div class="bg-white rounded-2xl metric-card metric-slate p-5 text-center overflow-visible">
+                <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Días Laborales</p>
+                <p class="text-4xl font-bold text-gray-800 mt-1" id="sTotalLabor">—</p>
+                <p class="text-xs text-gray-400 mt-1 leading-snug">en el período</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl metric-card metric-blue p-5 text-center overflow-visible">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide leading-snug px-0.5" id="sAvgLabel">Promedio / día activo</p>
+            <p class="text-4xl font-bold text-gray-800 mt-1" id="sAvg">—</p>
+            <p class="text-xs text-gray-400 mt-1 leading-snug break-words px-0.5" id="sAvgDenom">por día</p>
+        </div>
+        <div class="bg-white rounded-2xl metric-card metric-indigo p-5 text-center overflow-visible">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Mediana</p>
+            <p class="text-4xl font-bold text-gray-800 mt-1" id="sMedian">—</p>
+            <p class="text-xs text-gray-400 mt-1 leading-snug">en días activos</p>
+        </div>
+        <div class="bg-white rounded-2xl metric-card metric-green p-5 text-center overflow-visible">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Día Máximo</p>
+            <p class="text-4xl font-bold text-gray-800 mt-1" id="sMax">—</p>
+            <p class="text-xs text-gray-400 mt-2 leading-snug break-words hyphens-auto px-0.5 min-h-[2.75rem] flex items-center justify-center text-center" id="sMaxDate">—</p>
+        </div>
+        <div class="bg-white rounded-2xl metric-card metric-amber p-5 text-center overflow-visible">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Día Mínimo</p>
+            <p class="text-4xl font-bold text-gray-800 mt-1" id="sMin">—</p>
+            <p class="text-xs text-gray-400 mt-2 leading-snug break-words hyphens-auto px-0.5 min-h-[2.75rem] flex items-center justify-center text-center" id="sMinDate">en días activos</p>
+        </div>
+        <div class="bg-white rounded-2xl metric-card metric-purple p-5 text-center overflow-visible">
+            <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide">Moda</p>
+            <p class="text-4xl font-bold text-gray-800 mt-1" id="sModa">—</p>
+            <p class="text-xs text-gray-400 mt-2 leading-snug break-words px-0.5" id="sModaDays">valor más frecuente</p>
+        </div>
+    </div>
+    </div>
+
+    <!-- Result tabs -->
+    <div class="bg-white rounded-2xl panel-card overflow-hidden">
+        <div class="border-b border-gray-100 px-6">
+            <nav class="flex gap-1">
+                <button onclick="switchRTab('rt-diario',this)" class="rtab active px-5 py-4 text-sm text-gray-500 border-b-2 border-transparent">Línea de Tiempo</button>
+                <button onclick="switchRTab('rt-mes',this)"    class="rtab px-5 py-4 text-sm text-gray-500 border-b-2 border-transparent">Por Mes</button>
+                <button onclick="switchRTab('rt-dewey',this)"  class="rtab px-5 py-4 text-sm text-gray-500 border-b-2 border-transparent">Por Dewey</button>
+                <button onclick="switchRTab('rt-colec',this)"  class="rtab px-5 py-4 text-sm text-gray-500 border-b-2 border-transparent">Por Colección</button>
+            </nav>
+        </div>
+
+        <!-- Tab: Línea de Tiempo -->
+        <div id="rt-diario" class="rtab-panel active p-6">
+            <p id="chartMainLabel" class="text-xs text-gray-400 mb-3"></p>
+            <canvas id="chartMain" height="90"></canvas>
+        </div>
+
+        <!-- Tab: Por Mes -->
+        <div id="rt-mes" class="rtab-panel p-6">
+            <p class="text-xs text-gray-400 mb-4">Distribución mensual · todas las categorías</p>
+            <canvas id="chartMes" height="80"></canvas>
+            <div id="tableMonthly" class="mt-6 overflow-x-auto"></div>
+        </div>
+
+        <!-- Tab: Por Dewey -->
+        <div id="rt-dewey" class="rtab-panel p-6">
+            <div class="flex items-center justify-between flex-wrap gap-3 mb-4">
+                <p id="deweyInfoText" class="text-xs text-gray-400">Clasificación Dewey — filtrada por categoría seleccionada</p>
+                <div class="flex gap-2 flex-wrap">
+                    <button id="dlevel-centenas" onclick="toggleDeweyLevel('centenas')"
+                        class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-white text-gray-500 border-gray-200 hover:border-sky-300">
+                        Centenas
+                    </button>
+                    <button id="dlevel-decenas"  onclick="toggleDeweyLevel('decenas')"
+                        class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-sky-500 text-white border-sky-500">
+                        Decenas
+                    </button>
+                    <button id="dsort-count"  onclick="toggleDeweySort('count')"
+                        class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-sky-500 text-white border-sky-500">
+                        Por cantidad ↓
+                    </button>
+                    <button id="dsort-number" onclick="toggleDeweySort('number')"
+                        class="text-xs px-3 py-1.5 rounded-lg border font-medium transition bg-white text-gray-500 border-gray-200 hover:border-sky-300">
+                        Por número Dewey ↑
+                    </button>
+                </div>
+            </div>
+            <canvas id="chartDewey" height="80"></canvas>
+            <div id="tableDewey" class="mt-6 overflow-x-auto"></div>
+        </div>
+
+        <!-- Tab: Por Colección -->
+        <div id="rt-colec" class="rtab-panel p-6">
+            <p class="text-xs text-gray-400 mb-4">Distribución por colección — todos los registros del período</p>
+            <canvas id="chartColec" height="80"></canvas>
+            <div id="tableColec" class="mt-6 overflow-x-auto"></div>
+        </div>
+    </div>
+
+    <!-- Bottom actions -->
+    <div class="flex items-center justify-end w-full pb-4">
+        <button onclick="abrirModalExportPNG()" class="bg-[#800019] hover:bg-[#670015] text-white font-semibold px-5 py-3 rounded-xl transition flex items-center gap-2 shadow-sm">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 15a4 4 0 014-4h1m4 0h1a4 4 0 110 8H7a4 4 0 01-4-4zm9-7l-3 3m0 0l3 3m-3-3h12"/></svg>
+            Visualizaciones
+        </button>
+    </div>
+</div>
+</main>
+
+<!-- Modal export PNG -->
+<div id="modalExportPng" class="fixed inset-0 bg-black/40 z-50 hidden items-center justify-center p-4">
+    <div class="bg-white rounded-2xl w-full max-w-2xl p-6 panel-card max-h-[90vh] overflow-y-auto">
+        <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Visualizaciones (PNG)</h3>
+                <p class="text-sm text-gray-500">Elige gráficas y/o tablas; puedes combinar.</p>
+            </div>
+            <button onclick="cerrarModalExportPNG()" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+
+        <div class="mb-5 p-4 rounded-xl border border-gray-200 bg-gray-50 space-y-3">
+            <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide">Contenido a exportar</p>
+            <label class="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                <input type="checkbox" id="exp-include-charts" class="modal-export-check rounded border-gray-300 shrink-0" checked>
+                Incluir gráficas
+            </label>
+            <label class="flex items-center gap-2 text-sm text-gray-800 cursor-pointer">
+                <input type="checkbox" id="exp-include-tables" class="modal-export-check rounded border-gray-300 shrink-0" checked>
+                Incluir tablas
+            </label>
+        </div>
+
+        <div class="mb-5 p-3 rounded-xl border border-dashed border-gray-300 bg-white flex items-start gap-3">
+            <input type="checkbox" id="exp-include-metricas" class="modal-export-check mt-0.5 rounded border-gray-300 shrink-0" checked>
+            <div>
+                <label for="exp-include-metricas" class="text-sm font-medium text-gray-800 cursor-pointer">Incluir resumen de métricas</label>
+                <p class="text-xs text-gray-500 mt-0.5">Un PNG por cada categoría marcada abajo.</p>
+            </div>
+        </div>
+
+        <div class="grid md:grid-cols-2 gap-6">
+            <div>
+                <p class="text-sm font-semibold text-gray-800 mb-2">Categorías</p>
+                <div class="space-y-2 text-sm">
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-cat modal-export-check rounded border-gray-300 shrink-0" value="todos"> Todos</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-cat modal-export-check rounded border-gray-300 shrink-0" value="nuevo" checked> Nuevos Bibliográficos</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-cat modal-export-check rounded border-gray-300 shrink-0" value="propio"> Ejemplares Propios</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-cat modal-export-check rounded border-gray-300 shrink-0" value="existente"> Ejemplares Existentes</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-cat modal-export-check rounded border-gray-300 shrink-0" value="anadidos"> Total de Ejemplares</label>
+                </div>
+            </div>
+            <div>
+                <p class="text-sm font-semibold text-gray-800 mb-2">Vistas</p>
+                <div class="space-y-2 text-sm">
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-chart modal-export-check rounded border-gray-300 shrink-0" value="rt-diario" checked> Línea de Tiempo</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-chart modal-export-check rounded border-gray-300 shrink-0" value="rt-mes" checked> Por Mes</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-chart modal-export-check rounded border-gray-300 shrink-0" value="rt-dewey" checked> Por Dewey</label>
+                    <label class="flex items-center gap-2"><input type="checkbox" class="exp-chart modal-export-check rounded border-gray-300 shrink-0" value="rt-colec" checked> Por Colección</label>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 mt-6">
+            <div class="flex items-center gap-2">
+                <button onclick="marcarExportPng(true)" class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-400">Marcar todo</button>
+                <button onclick="marcarExportPng(false)" class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-400">Desmarcar todo</button>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="cerrarModalExportPNG()" class="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-300">Cancelar</button>
+                <button onclick="exportarVisualizacionesPNGSeleccion()" class="bg-[#800019] hover:bg-[#670015] text-white font-semibold px-4 py-2 rounded-lg">Descargar PNG</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading export (progreso) -->
+<div id="exportLoadingOverlay" class="fixed inset-0 z-[60] hidden items-center justify-center bg-black/50 p-4" aria-live="polite" aria-busy="true">
+    <div class="bg-white rounded-2xl p-8 max-w-lg w-full shadow-xl text-center panel-card">
+        <div class="inline-block h-10 w-10 animate-spin rounded-full border-4 border-gray-200 border-t-[#800019]" role="status"></div>
+        <p id="exportLoadingText" class="mt-5 text-sm text-gray-700 leading-relaxed"></p>
+    </div>
+</div>
+
+<!-- Modal: ajustar periodo (visión publicada / snapshot) -->
+<div id="modalAjustarPeriodo" class="fixed inset-0 z-[55] hidden items-center justify-center bg-black/40 p-4" aria-hidden="true">
+    <div class="bg-white rounded-2xl w-full max-w-4xl max-h-[92vh] overflow-y-auto p-6 panel-card shadow-xl">
+        <div class="flex items-start justify-between gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-bold text-gray-900">Ajustar periodo — visión publicada</h3>
+                <p class="text-sm text-gray-500 mt-0.5">Clic o toque en la franja de fechas (arriba) o en año/mes (abajo) marca el modo activo al instante; al abrir calendario o desplegables ocurre lo mismo. La grilla solo cambia al confirmar fechas o mes.</p>
+            </div>
+            <button type="button" onclick="cerrarModalAjustarPeriodo(true)" class="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
+        </div>
+        <div id="ma-row-manual" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 rounded-xl border-2 p-3 transition-all duration-150 opacity-100 border-blue-300 cursor-pointer">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha inicio</label>
+                <input type="text" id="ma-date-start" class="w-full p-3 border border-gray-200 rounded-xl text-sm" placeholder="Inicio" readonly>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Fecha fin</label>
+                <input type="text" id="ma-date-end" class="w-full p-3 border border-gray-200 rounded-xl text-sm" placeholder="Fin" readonly>
+            </div>
+        </div>
+        <div id="ma-row-atajos" class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 rounded-xl border-2 p-3 transition-all duration-150 opacity-60 border-gray-200 cursor-pointer">
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Año</label>
+                <select id="ma-quick-year" class="w-full p-3 border border-gray-200 rounded-xl text-sm" onchange="onQuickYearSelectUser('ma')"></select>
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Mes</label>
+                <select id="ma-quick-month" class="w-full p-3 border border-gray-200 rounded-xl text-sm" onchange="onQuickMonthApply('ma')"></select>
+            </div>
+        </div>
+        <p class="text-xs text-gray-500 mb-3">Por defecto se inhabilitan los laborables en navidad (22 dic 2025 – 6 ene 2026) y la semana 30 mar – 3 abr 2026; puedes volver a habilitarlos en la grilla.</p>
+        <div id="ma-calGrid" class="">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h4 class="font-semibold text-gray-700 text-sm">Días hábiles del periodo</h4>
+                <button type="button" onclick="resetDays()" class="text-xs text-gray-400 hover:text-red-500 underline transition">Limpiar inhabilitados</button>
+            </div>
+            <div class="overflow-x-auto rounded-xl border border-gray-100">
+                <table class="w-full text-center">
+                    <thead class="bg-gray-50">
+                        <tr class="text-xs text-gray-400 font-semibold uppercase tracking-wide">
+                            <th class="py-2 px-3 text-left">Semana</th>
+                            <th class="py-2 w-10">Lun</th><th class="py-2 w-10">Mar</th>
+                            <th class="py-2 w-10">Mié</th><th class="py-2 w-10">Jue</th>
+                            <th class="py-2 w-10">Vie</th>
+                            <th class="py-2 px-3 text-right">Semana</th>
+                        </tr>
+                    </thead>
+                    <tbody id="ma-calBody" class="divide-y divide-gray-50"></tbody>
+                </table>
+            </div>
+            <div class="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-100 flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm text-blue-700">Días laborales válidos: <strong id="ma-sumValid" class="text-blue-900 text-lg ml-1">0</strong></p>
+                <p id="ma-sumDetail" class="text-xs text-blue-500"></p>
+            </div>
+        </div>
+        <div class="flex flex-wrap justify-end gap-2 mt-6 pt-4 border-t border-gray-100">
+            <button type="button" onclick="cerrarModalAjustarPeriodo(true)" class="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 hover:border-gray-300">Cancelar</button>
+            <button type="button" onclick="aplicarModalAjustarPeriodo()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-5 py-2 rounded-lg">Aplicar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════ -->
+<script id="catalogacion-app">
+
+// ═══════════════════════════ CONSTANTS ═══════════════════════════════
+const MESES_MAP = {
+    'enero':0,'febrero':1,'marzo':2,'abril':3,'mayo':4,'junio':5,
+    'julio':6,'agosto':7,'septiembre':8,'octubre':9,'noviembre':10,'diciembre':11
+};
+const MESES_NOMBRES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+const DEWEY_LABELS = {
+    // 000s
+    '00':'000 – Informática, información y obras generales',
+    '01':'010 – Bibliografía',
+    '02':'020 – Bibliotecología y ciencias de la información',
+    '03':'030 – Enciclopedias y referencia general',
+    '04':'040 – (sin asignar)',
+    '05':'050 – Publicaciones en serie generales',
+    '06':'060 – Organizaciones y museología',
+    '07':'070 – Periodismo y medios de comunicación',
+    '08':'080 – Colecciones generales',
+    '09':'090 – Manuscritos y libros raros',
+    // 100s
+    '10':'100 – Filosofía general',
+    '11':'110 – Metafísica',
+    '12':'120 – Epistemología',
+    '13':'130 – Parapsicología y ocultismo',
+    '14':'140 – Escuelas filosóficas',
+    '15':'150 – Psicología',
+    '16':'160 – Lógica',
+    '17':'170 – Ética',
+    '18':'180 – Filosofía antigua, medieval y oriental',
+    '19':'190 – Filosofía moderna occidental',
+    // 200s
+    '20':'200 – Religión general',
+    '21':'210 – Filosofía y teoría de la religión',
+    '22':'220 – Biblia',
+    '23':'230 – Teología cristiana',
+    '24':'240 – Moral y práctica cristiana',
+    '25':'250 – Iglesias y órdenes religiosas',
+    '26':'260 – Teología social cristiana',
+    '27':'270 – Historia del Cristianismo',
+    '28':'280 – Denominaciones y sectas',
+    '29':'290 – Religiones no cristianas',
+    // 300s
+    '30':'300 – Ciencias sociales general',
+    '31':'310 – Estadística',
+    '32':'320 – Ciencias políticas',
+    '33':'330 – Economía',
+    '34':'340 – Derecho',
+    '35':'350 – Administración pública',
+    '36':'360 – Problemas y servicios sociales',
+    '37':'370 – Educación',
+    '38':'380 – Comercio, comunicaciones y transporte',
+    '39':'390 – Costumbres, etiqueta y folclore',
+    // 400s
+    '40':'400 – Lenguaje general',
+    '41':'410 – Lingüística',
+    '42':'420 – Inglés',
+    '43':'430 – Alemán',
+    '44':'440 – Francés',
+    '45':'450 – Italiano',
+    '46':'460 – Español y portugués',
+    '47':'470 – Latín',
+    '48':'480 – Griego clásico',
+    '49':'490 – Otras lenguas',
+    // 500s
+    '50':'500 – Ciencias naturales general',
+    '51':'510 – Matemáticas',
+    '52':'520 – Astronomía',
+    '53':'530 – Física',
+    '54':'540 – Química',
+    '55':'550 – Ciencias de la Tierra y geología',
+    '56':'560 – Paleontología',
+    '57':'570 – Biología',
+    '58':'580 – Botánica',
+    '59':'590 – Zoología',
+    // 600s
+    '60':'600 – Tecnología general',
+    '61':'610 – Medicina y ciencias de la salud',
+    '62':'620 – Ingeniería',
+    '63':'630 – Agricultura',
+    '64':'640 – Economía doméstica y vida familiar',
+    '65':'650 – Administración de empresas y gestión',
+    '66':'660 – Ingeniería química',
+    '67':'670 – Manufactura',
+    '68':'680 – Manufactura para usos específicos',
+    '69':'690 – Construcción',
+    // 700s
+    '70':'700 – Arte general',
+    '71':'710 – Urbanismo y paisajismo',
+    '72':'720 – Arquitectura',
+    '73':'730 – Escultura y artes plásticas',
+    '74':'740 – Dibujo y artes decorativas',
+    '75':'750 – Pintura',
+    '76':'760 – Artes gráficas y grabado',
+    '77':'770 – Fotografía',
+    '78':'780 – Música',
+    '79':'790 – Deportes, juegos y entretenimiento',
+    // 800s
+    '80':'800 – Literatura general',
+    '81':'810 – Literatura en inglés (americano)',
+    '82':'820 – Literatura en inglés (británico)',
+    '83':'830 – Literatura en alemán',
+    '84':'840 – Literatura en francés',
+    '85':'850 – Literatura en italiano',
+    '86':'860 – Literatura en español y portugués',
+    '87':'870 – Literatura en latín',
+    '88':'880 – Literatura en griego clásico',
+    '89':'890 – Literaturas en otras lenguas',
+    // 900s
+    '90':'900 – Historia y geografía general',
+    '91':'910 – Geografía y viajes',
+    '92':'920 – Biografía, genealogía y heráldica',
+    '93':'930 – Historia del mundo antiguo',
+    '94':'940 – Historia de Europa',
+    '95':'950 – Historia de Asia',
+    '96':'960 – Historia de África',
+    '97':'970 – Historia de América del Norte',
+    '98':'980 – Historia de América del Sur',
+    '99':'990 – Historia de otras áreas',
+    'NC':'Sin clasificación / Ficción'
+};
+const CAT_LABELS = {
+    todos:     'Todos los trabajados',
+    nuevo:     'Nuevos Bibliográficos',
+    propio:    'Ejemplares Añadidos (Propios)',
+    existente: 'Ejemplares Añadidos (Existentes)',
+    anadidos:  'Añadidos Total (propios + existentes)'
+};
+const CAT_COLORS = { todos:'#3b82f6', nuevo:'#3b82f6', propio:'#6366f1', existente:'#a855f7', anadidos:'#8b5cf6' };
+const CHART_PALETTE = ['#2563eb','#4f46e5','#7c3aed','#9333ea','#c026d3','#db2777','#e11d48','#ea580c','#d97706','#ca8a04','#65a30d','#16a34a','#0d9488','#0891b2'];
+const DEWEY_HUNDREDS_LABELS = {
+    '0':'000 – Informática, información y obras generales',
+    '1':'100 – Filosofía y psicología',
+    '2':'200 – Religión',
+    '3':'300 – Ciencias sociales',
+    '4':'400 – Lenguaje',
+    '5':'500 – Ciencias naturales',
+    '6':'600 – Tecnología aplicada',
+    '7':'700 – Arte y recreación',
+    '8':'800 – Literatura',
+    '9':'900 – Historia y geografía',
+    'NC':'Sin clasificación / Ficción'
+};
+const DEWEY_HUNDREDS_COLORS = {
+    // Palette optimized for adjacent contrast (non-monochromatic neighbors)
+    '0':'#ef4444', // red
+    '1':'#0ea5e9', // sky
+    '2':'#22c55e', // green
+    '3':'#f59e0b', // amber
+    '4':'#8b5cf6', // violet
+    '5':'#14b8a6', // teal
+    '6':'#f43f5e', // rose
+    '7':'#3b82f6', // blue
+    '8':'#eab308', // yellow
+    '9':'#a855f7', // purple
+    'NC':'#6b7280' // gray
+};
+
+const PERIODO_UI_SESSION_MA = 'catalogacion_periodo_ui_ma';
+const PERIODO_UI_SESSION_S2 = 'catalogacion_periodo_ui_s2';
+
+/** Rangos (inclusive, ISO) cuyos días laborables en allWeekdays quedan inhabilitados por defecto (tras restaurar disabled guardados, si los hay). */
+const INSTITUTIONAL_DISABLED_RANGES = [
+    ['2025-12-22', '2026-01-06'],
+    ['2026-03-30', '2026-04-03']
+];
+
+// ═══════════════════════════ STATE ═══════════════════════════════════
+let currentStep   = 1;
+let unlockedSteps = new Set([1, 2]);
+let disabledDays  = new Set();
+let allWeekdays   = [];
+let weekRanges    = [];
+let analysisMode  = 'active';
+let selectedCat   = 'todos';
+let deweySortMode = 'count';  // 'count' | 'number'
+let deweyLevel    = 'decenas'; // 'centenas' | 'decenas'
+let records       = [];       // {date, status:'nuevo'|'propio'|'existente', coleccion, clasificacion}
+/** Huella de `records` para invalidar lastAy/lastAmo en session si cambian los datos (s2 + ma). */
+let lastRecordsDataFingerprint = '';
+let statsGlobal   = null;     // {totalLabor, validDays}
+let charts        = {};       // id → Chart instance
+
+/** 'step2' = editor (paso 2); 'modal' = visión publicada (#modalAjustarPeriodo). */
+let calContext = 'step2';
+let exportedCalState = null;  // { allWeekdays, disabledDays } desde __REPORT_DATA__ para reabrir el modal
+let fpModalStart = null;
+let fpModalEnd = null;
+let modalPeriodoModo = 'manual'; // 'manual' | 'atajos'
+let fpStep2Start = null;
+let fpStep2End = null;
+let step2PeriodoModo = 'manual';
+/** Último año/mes por prefijo; sobrevive alternancia rangos ↔ por meses (s2 + modal ma). */
+let lastSelectedMonthState = { s2: { y: '', mo: '' }, ma: { y: '', mo: '' } };
+/** Último rango manual elegido en esta sesión (solo RAM; no sessionStorage). */
+let lastManualRangeState = { s2: { startIso: '', endIso: '' }, ma: { startIso: '', endIso: '' } };
+/** Periodo exacto del informe al abrir el modal (ISO YYYY-MM-DD); default visual al tocar «Rangos» sin memoria volátil. */
+let maModalExportedPeriod = null;
+/** >0 mientras se hace setDate en el par; evita que onChange pase el modo a «rangos» al sincronizar desde año/mes. */
+let fpPairChangeSuppress = 0;
+
+function withFlatpickrPairChangeSuppressed(fn) {
+    fpPairChangeSuppress++;
+    try { return fn(); } finally { fpPairChangeSuppress--; }
+}
+
+/** Alinea inicio/fin con un rango sin disparar la lógica de modo/calendario del onChange de Flatpickr. */
+function setPrefixFlatpickrRangeQuiet(prefix, s, e) {
+    if (!s || !e || isNaN(s.getTime()) || isNaN(e.getTime())) return;
+    withFlatpickrPairChangeSuppressed(function () {
+        if (prefix === 's2' && fpStep2Start && fpStep2End && fpStep2Start.setDate && fpStep2End.setDate) {
+            fpStep2Start.setDate(s, false);
+            fpStep2End.setDate(e, false);
+        } else if (prefix === 'ma' && fpModalStart && fpModalEnd && fpModalStart.setDate && fpModalEnd.setDate) {
+            fpModalStart.setDate(s, false);
+            fpModalEnd.setDate(e, false);
+        }
+    });
+}
+
+function destroyStep2Flatpickr() {
+    if (fpStep2Start && typeof fpStep2Start.destroy === 'function') { try { fpStep2Start.destroy(); } catch (e) {} fpStep2Start = null; }
+    if (fpStep2End && typeof fpStep2End.destroy === 'function') { try { fpStep2End.destroy(); } catch (e) {} fpStep2End = null; }
+}
+
+function periodoModoGet(prefix) {
+    return prefix === 'ma' ? modalPeriodoModo : step2PeriodoModo;
+}
+function periodoModoSet(prefix, m) {
+    if (prefix === 'ma') modalPeriodoModo = m;
+    else step2PeriodoModo = m;
+}
+
+function savePeriodoUiState(prefix) {
+    if (typeof sessionStorage === 'undefined') return;
+    const key = prefix === 'ma' ? PERIODO_UI_SESSION_MA : PERIODO_UI_SESSION_S2;
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    let prevLastAy = '';
+    let prevLastAmo = '';
+    try {
+        const raw = sessionStorage.getItem(key);
+        if (raw) {
+            const o = JSON.parse(raw);
+            if (o && typeof o === 'object') {
+                prevLastAy = o.lastAy || '';
+                prevLastAmo = o.lastAmo || '';
+                if (!prevLastAy && o.modo === 'atajos' && o.y) prevLastAy = o.y;
+                if (!prevLastAmo && o.modo === 'atajos' && o.mo) prevLastAmo = o.mo;
+            }
+        }
+    } catch (e) {}
+    const modo = periodoModoGet(prefix);
+    let lastAy = prevLastAy;
+    let lastAmo = prevLastAmo;
+    if (ySel && mSel && ySel.value && mSel.value) {
+        lastAy = ySel.value;
+        lastAmo = mSel.value;
+        noteLastSelectedYearMonth(prefix, lastAy, lastAmo);
+    }
+    try {
+        sessionStorage.setItem(key, JSON.stringify({
+            modo,
+            y: ySel && ySel.value ? ySel.value : '',
+            mo: mSel && mSel.value ? mSel.value : '',
+            lastAy,
+            lastAmo
+        }));
+    } catch (e) {}
+}
+
+function readPeriodoUiState(prefix) {
+    if (typeof sessionStorage === 'undefined') return null;
+    const key = prefix === 'ma' ? PERIODO_UI_SESSION_MA : PERIODO_UI_SESSION_S2;
+    try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return null;
+        const o = JSON.parse(raw);
+        if (!o || (o.modo !== 'manual' && o.modo !== 'atajos')) return null;
+        return {
+            modo: o.modo,
+            y: o.y || '',
+            mo: o.mo || '',
+            lastAy: o.lastAy || '',
+            lastAmo: o.lastAmo || ''
+        };
+    } catch (e) {
+        return null;
+    }
+}
+
+function noteLastSelectedYearMonth(prefix, y, mo) {
+    if (prefix !== 's2' && prefix !== 'ma') return;
+    if (!y || !mo) return;
+    lastSelectedMonthState[prefix].y = y;
+    lastSelectedMonthState[prefix].mo = mo;
+}
+
+/** Rellena año/mes desde memoria o session sin rebuild de grilla (p. ej. clic en barra «por meses»).
+ *  Jerarquía: si el usuario ya tiene un año en el dropdown, ese año manda y solo se subordina el mes. */
+function syncMonthSelectsFromLastSelection(prefix) {
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    if (!ySel || !mSel) return;
+    /* Año fijado por el usuario: prohibido sobreescribir, solo subordinar el mes a ese año. */
+    if (ySel.value) {
+        if (mSel.value) return;
+        repopulateQuickMonthSelect(prefix);
+        const moInYear = getMostRecentMonthForYear(ySel.value);
+        if (moInYear && [...mSel.options].some(function (o) { return o.value === moInYear; })) {
+            mSel.value = moInYear;
+            noteLastSelectedYearMonth(prefix, ySel.value, moInYear);
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:syncMonthSelectsFromLastSelection',message:'anchor_on_user_year',data:{prefix:prefix,y:ySel.value,mo:mSel.value},timestamp:Date.now(),hypothesisId:'year-anchor'})}).catch(function(){});
+        // #endregion
+        return;
+    }
+    const mem = lastSelectedMonthState[prefix];
+    let y = mem && mem.y ? mem.y : '';
+    let mo = mem && mem.mo ? mem.mo : '';
+    if (!y || !mo) {
+        const pu = readPeriodoUiState(prefix);
+        if (pu) {
+            y = pu.lastAy || pu.y || '';
+            mo = pu.lastAmo || pu.mo || '';
+            if (y && mo) noteLastSelectedYearMonth(prefix, y, mo);
+        }
+    }
+    if (!y || !mo) return;
+    if (![...ySel.options].some(function (o) { return o.value === y; })) return;
+    const prevM = mSel.value;
+    if (ySel.value !== y) ySel.value = y;
+    repopulateQuickMonthSelect(prefix);
+    if ([...mSel.options].some(function (o) { return o.value === mo; })) {
+        mSel.value = mo;
+    } else if (prevM && [...mSel.options].some(function (o) { return o.value === prevM; })) {
+        mSel.value = prevM;
+    }
+}
+
+function hydrateLastSelectedMonthFromSession(prefix) {
+    const pu = readPeriodoUiState(prefix);
+    if (!pu) return;
+    const y = pu.lastAy || pu.y || '';
+    const mo = pu.lastAmo || pu.mo || '';
+    if (y && mo) noteLastSelectedYearMonth(prefix, y, mo);
+}
+
+function noteLastManualRangeForPrefix(prefix, a, b) {
+    if (prefix !== 's2' && prefix !== 'ma') return;
+    if (!a || !b || isNaN(a.getTime()) || isNaN(b.getTime())) return;
+    let x = new Date(a);
+    let y = new Date(b);
+    if (x > y) { const t = x; x = y; y = t; }
+    lastManualRangeState[prefix].startIso = isoDate(x);
+    lastManualRangeState[prefix].endIso = isoDate(y);
+}
+
+/** Rango inicio/fin para la franja «Rangos» (memoria volátil, periodo exportado en modal, o defaults). */
+function resolveManualStripeRangeDates(prefix) {
+    function norm(s, e) {
+        let a = new Date(s);
+        let b = new Date(e);
+        if (isNaN(a.getTime()) || isNaN(b.getTime())) return null;
+        if (a > b) { const t = a; a = b; b = t; }
+        return { s: a, e: b };
+    }
+    if (prefix === 'ma') {
+        const mem = lastManualRangeState.ma;
+        if (mem.startIso && mem.endIso) {
+            const s = new Date(mem.startIso + 'T12:00:00');
+            const e = new Date(mem.endIso + 'T12:00:00');
+            const r = norm(s, e);
+            if (r) return r;
+        }
+        if (maModalExportedPeriod && maModalExportedPeriod.startIso && maModalExportedPeriod.endIso) {
+            const s = new Date(maModalExportedPeriod.startIso + 'T12:00:00');
+            const e = new Date(maModalExportedPeriod.endIso + 'T12:00:00');
+            return norm(s, e);
+        }
+        return null;
+    }
+    if (prefix === 's2') {
+        const mem = lastManualRangeState.s2;
+        if (mem.startIso && mem.endIso) {
+            const s = new Date(mem.startIso + 'T12:00:00');
+            const e = new Date(mem.endIso + 'T12:00:00');
+            const r = norm(s, e);
+            if (r) return r;
+        }
+        const pair = getManualRangeDataMinToTodayClamped();
+        if (pair) return norm(pair[0], pair[1]);
+        if (allWeekdays && allWeekdays.length) {
+            const sorted = [...allWeekdays].sort();
+            const s = new Date(sorted[0] + 'T12:00:00');
+            const e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+            const r = norm(s, e);
+            if (r) return r;
+        }
+        const t = todayAtLocalNoon();
+        return norm(t, t);
+    }
+    return null;
+}
+
+/** Alinea pickers con el rango resuelto; devuelve { s, e } o null. */
+function syncManualDatePickersOnZoneActivate(prefix) {
+    const r = resolveManualStripeRangeDates(prefix);
+    if (!r) return null;
+    setPrefixFlatpickrRangeQuiet(prefix, r.s, r.e);
+    return r;
+}
+
+/** Default de selects sin tocar grilla. Año del usuario manda; mes se ajusta al año visible. */
+function fillQuickMonthSelectsDefaultFromRecordsQuiet(prefix) {
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    if (!ySel || !mSel) return;
+    if (ySel.value && mSel.value) return;
+    /* Año ya elegido por el usuario: subordinar mes a ese año, sin sobreescribir el año. */
+    if (ySel.value && !mSel.value) {
+        const moInYear = getMostRecentMonthForYear(ySel.value);
+        if (!moInYear) return;
+        repopulateQuickMonthSelect(prefix);
+        if (![...mSel.options].some(function (o) { return o.value === moInYear; })) return;
+        mSel.value = moInYear;
+        noteLastSelectedYearMonth(prefix, ySel.value, moInYear);
+        // #region agent log
+        fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:fillQuickMonthSelectsDefaultFromRecordsQuiet',message:'month_subordinated_to_user_year',data:{prefix:prefix,y:ySel.value,mo:moInYear},timestamp:Date.now(),hypothesisId:'year-anchor'})}).catch(function(){});
+        // #endregion
+        return;
+    }
+    /* Ambos vacíos: aplica default global. */
+    const { y, mo } = getMostRecentYearMonthFromRecords();
+    if (!y || !mo) return;
+    if (![...ySel.options].some(function (o) { return o.value === y; })) return;
+    ySel.value = y;
+    repopulateQuickMonthSelect(prefix);
+    if (![...mSel.options].some(function (o) { return o.value === mo; })) return;
+    mSel.value = mo;
+    noteLastSelectedYearMonth(prefix, y, mo);
+}
+
+/** Tras rellenar selects y flatpickr: restaura rangos / por meses y año/mes de la última vez en esta pestaña. */
+function restorePeriodoUiAfterInit(prefix) {
+    const saved = readPeriodoUiState(prefix);
+    if (!saved) {
+        setPeriodoModo(prefix, 'manual');
+        return;
+    }
+    let modo = saved.modo;
+    const yPick = saved.lastAy || saved.y;
+    const mPick = saved.lastAmo || saved.mo;
+    if (modo === 'atajos' && yPick) {
+        const ySel = document.getElementById(prefix + '-quick-year');
+        const mSel = document.getElementById(prefix + '-quick-month');
+        const hasY = ySel && [...ySel.options].some(o => o.value === yPick);
+        if (hasY) {
+            ySel.value = yPick;
+            repopulateQuickMonthSelect(prefix);
+            if (mPick && mSel && [...mSel.options].some(o => o.value === mPick)) {
+                mSel.value = mPick;
+            }
+        } else {
+            modo = 'manual';
+        }
+    }
+    if (modo === 'manual' && yPick && mPick) {
+        const ySelM = document.getElementById(prefix + '-quick-year');
+        const mSelM = document.getElementById(prefix + '-quick-month');
+        if (ySelM && mSelM && [...ySelM.options].some(function (o) { return o.value === yPick; })) {
+            ySelM.value = yPick;
+            repopulateQuickMonthSelect(prefix);
+            if ([...mSelM.options].some(function (o) { return o.value === mPick; })) {
+                mSelM.value = mPick;
+                noteLastSelectedYearMonth(prefix, yPick, mPick);
+            }
+        }
+    }
+    if (modo === 'atajos' && yPick) {
+        const ySel = document.getElementById(prefix + '-quick-year');
+        const mSel = document.getElementById(prefix + '-quick-month');
+        const mo = (mPick && mSel && [...mSel.options].some(o => o.value === mPick))
+            ? mPick
+            : (mSel && mSel.value);
+        if (ySel && ySel.value === yPick && mo) {
+            applyQuickMonthForPrefix(prefix, yPick, mo);
+        }
+    }
+    setPeriodoModo(prefix, modo);
+}
+
+// ═══════════════════════════ FLATPICKR (paso 2 editor + modal visión) ═══
+function initFlatpickrPairForPrefix(prefix, s, e) {
+    if (prefix === 'ma') destroyModalFlatpickr();
+    else destroyStep2Flatpickr();
+    if (typeof flatpickr !== 'function') return;
+    const elS = document.getElementById(prefix + '-date-start');
+    const elE = document.getElementById(prefix + '-date-end');
+    if (!elS || !elE) return;
+    let iS = null;
+    let iE = null;
+    function onPairChange() {
+        if (fpPairChangeSuppress > 0) return;
+        if (periodoModoGet(prefix) !== 'manual') {
+            const ds0 = iS && iS.selectedDates && iS.selectedDates[0];
+            const de0 = iE && iE.selectedDates && iE.selectedDates[0];
+            if (ds0 || de0) {
+                setPeriodoModo(prefix, 'manual', { skipAtajosToManualRestore: true });
+            }
+        }
+        if (periodoModoGet(prefix) !== 'manual') return;
+        const fs = iS;
+        const fe = iE;
+        const ds = fs && fs.selectedDates && fs.selectedDates[0];
+        const de = fe && fe.selectedDates && fe.selectedDates[0];
+        if (!ds || !de) return;
+        let a = new Date(ds); let b = new Date(de);
+        if (a > b) { const t = a; a = b; b = t; }
+        calContext = prefix === 'ma' ? 'modal' : 'step2';
+        buildCalGrid(a, b, { fromPersistence: false });
+        noteLastManualRangeForPrefix(prefix, a, b);
+        if (fs && fs.setDate) fs.setDate(a, false);
+        if (fe && fe.setDate) fe.setDate(b, false);
+        if (prefix === 's2') {
+            const calGrid = document.getElementById('calGrid');
+            if (calGrid) calGrid.classList.remove('hidden');
+        }
+    }
+    function onPickerOpen() {
+        /* Modo rangos en cuanto se abre el calendario, sin esperar a elegir fecha. */
+        setPeriodoModo(prefix, 'manual', { uiOnly: true, skipAtajosToManualRestore: true });
+    }
+    const optS = { locale: 'es', dateFormat: 'Y-m-d', onChange: onPairChange, onOpen: onPickerOpen };
+    const optE = { locale: 'es', dateFormat: 'Y-m-d', onChange: onPairChange, onOpen: onPickerOpen };
+    if (s) optS.defaultDate = s;
+    if (e) optE.defaultDate = e;
+    iS = flatpickr(elS, optS);
+    iE = flatpickr(elE, optE);
+    if (prefix === 'ma') { fpModalStart = iS; fpModalEnd = iE; }
+    else { fpStep2Start = iS; fpStep2End = iE; }
+}
+
+function initModalFlatpickrPair(s, e) {
+    initFlatpickrPairForPrefix('ma', s, e);
+}
+
+function initStep2FlatpickrPair(s, e) {
+    initFlatpickrPairForPrefix('s2', s, e);
+}
+
+function getStep2SortedRangeDates() {
+    if (!fpStep2Start || !fpStep2End) return [];
+    const ds = fpStep2Start.selectedDates && fpStep2Start.selectedDates[0];
+    const de = fpStep2End.selectedDates && fpStep2End.selectedDates[0];
+    if (!ds || !de) return [];
+    let a = new Date(ds); let b = new Date(de);
+    if (a > b) { const t = a; a = b; b = t; }
+    return [a, b];
+}
+
+/** Inicio/fin a persistir: el periodo real de la grilla (p. ej. tras «Por meses»), si no hay grilla los pickers del paso 2. */
+function getPersistRangeDatesForSave() {
+    if (allWeekdays && allWeekdays.length) {
+        const sorted = [...allWeekdays].sort();
+        const s = new Date(sorted[0] + 'T12:00:00');
+        const e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+        if (!isNaN(s.getTime()) && !isNaN(e.getTime())) return [s, e];
+    }
+    return getStep2SortedRangeDates();
+}
+
+function saveCalendarState() {
+    if (isSnapshotReport()) return;
+}
+
+function loadCalendarState() {
+    if (!document.getElementById('s2-date-start')) return;
+    restorePeriodoUiAfterInit('s2');
+}
+
+function restoreStep2ManualFromStorageOrGrid() {
+    calContext = 'step2';
+    /* Si el usuario ya eligió un rango manual en esta sesión, respétalo (volatile RAM). */
+    const memS = lastManualRangeState && lastManualRangeState.s2;
+    if (memS && memS.startIso && memS.endIso) {
+        const sm = new Date(memS.startIso + 'T12:00:00');
+        const em = new Date(memS.endIso + 'T12:00:00');
+        // #region agent log
+        fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:restoreStep2ManualFromStorageOrGrid',message:'use_volatile_s2_manual',data:{startIso:memS.startIso,endIso:memS.endIso},timestamp:Date.now(),hypothesisId:'s2-manual-protect'})}).catch(function(){});
+        // #endregion
+        if (!isNaN(sm.getTime()) && !isNaN(em.getTime())) {
+            if (fpStep2Start && fpStep2End && fpStep2Start.setDate && fpStep2End.setDate) {
+                fpStep2Start.setDate(sm, false);
+                fpStep2End.setDate(em, false);
+            } else {
+                initStep2FlatpickrPair(sm, em);
+            }
+            buildCalGrid(sm, em, { fromPersistence: false });
+            const calGrid = document.getElementById('calGrid');
+            if (calGrid) calGrid.classList.remove('hidden');
+            saveCalendarState();
+            return;
+        }
+    }
+    const pair = getManualRangeDataMinToTodayClamped();
+    if (pair) {
+        const s = pair[0];
+        const e = pair[1];
+        if (fpStep2Start && fpStep2End && fpStep2Start.setDate && fpStep2End.setDate) {
+            fpStep2Start.setDate(s, false);
+            fpStep2End.setDate(e, false);
+        } else {
+            initStep2FlatpickrPair(s, e);
+        }
+        buildCalGrid(s, e, { fromPersistence: false });
+        const calGrid = document.getElementById('calGrid');
+        if (calGrid) calGrid.classList.remove('hidden');
+        saveCalendarState();
+        return;
+    }
+    if (allWeekdays && allWeekdays.length) {
+        const sorted = [...allWeekdays].sort();
+        const s = new Date(sorted[0] + 'T12:00:00');
+        const e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+        if (fpStep2Start && fpStep2End && fpStep2Start.setDate && fpStep2End.setDate) {
+            fpStep2Start.setDate(s, false);
+            fpStep2End.setDate(e, false);
+        } else {
+            initStep2FlatpickrPair(s, e);
+        }
+        buildCalGrid(s, e, { fromPersistence: false });
+        const calGrid = document.getElementById('calGrid');
+        if (calGrid) calGrid.classList.remove('hidden');
+        saveCalendarState();
+        return;
+    }
+    ensureStep2GridCoversRecordsBounds();
+}
+
+function restoreModalManualFromGrid() {
+    calContext = 'modal';
+    let s;
+    let e;
+    /* Si el usuario ya eligió un rango manual en el modal en esta sesión, respétalo (volatile RAM). */
+    const memM = lastManualRangeState && lastManualRangeState.ma;
+    if (memM && memM.startIso && memM.endIso) {
+        const sm = new Date(memM.startIso + 'T12:00:00');
+        const em = new Date(memM.endIso + 'T12:00:00');
+        if (!isNaN(sm.getTime()) && !isNaN(em.getTime())) {
+            s = sm;
+            e = em;
+            // #region agent log
+            fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:restoreModalManualFromGrid',message:'use_volatile_ma_manual',data:{startIso:memM.startIso,endIso:memM.endIso},timestamp:Date.now(),hypothesisId:'ma-manual-protect'})}).catch(function(){});
+            // #endregion
+        }
+    }
+    /* Si no hay memoria volátil pero hay periodo exportado del informe, úsalo en lugar del data-bounds. */
+    if (!s && maModalExportedPeriod && maModalExportedPeriod.startIso && maModalExportedPeriod.endIso) {
+        const ss = new Date(maModalExportedPeriod.startIso + 'T12:00:00');
+        const ee = new Date(maModalExportedPeriod.endIso + 'T12:00:00');
+        if (!isNaN(ss.getTime()) && !isNaN(ee.getTime())) {
+            s = ss;
+            e = ee;
+            // #region agent log
+            fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:restoreModalManualFromGrid',message:'use_exported_ma_period',data:{startIso:maModalExportedPeriod.startIso,endIso:maModalExportedPeriod.endIso},timestamp:Date.now(),hypothesisId:'ma-manual-protect'})}).catch(function(){});
+            // #endregion
+        }
+    }
+    if (!s) {
+        const pair = getManualRangeDataMinToTodayClamped();
+        if (pair) {
+            s = pair[0];
+            e = pair[1];
+        } else {
+            const sorted = [...allWeekdays].sort();
+            if (!sorted.length) return;
+            s = new Date(sorted[0] + 'T12:00:00');
+            e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+        }
+        // #region agent log
+        fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:restoreModalManualFromGrid',message:'fallback_data_bounds',data:{},timestamp:Date.now(),hypothesisId:'ma-manual-protect'})}).catch(function(){});
+        // #endregion
+    }
+    if (fpModalStart && fpModalEnd && fpModalStart.setDate && fpModalEnd.setDate) {
+        fpModalStart.setDate(s, false);
+        fpModalEnd.setDate(e, false);
+    } else {
+        initModalFlatpickrPair(s, e);
+    }
+    buildCalGrid(s, e, { fromPersistence: false });
+}
+
+/** Alinea los flatpickr del paso 2 con el periodo actual de la grilla (p. ej. al volver desde resultados). */
+function syncStep2FlatpickrToAllWeekdaysEdges() {
+    if (!document.getElementById('s2-date-start')) return;
+    if (!allWeekdays || !allWeekdays.length) return;
+    const sorted = [...allWeekdays].sort();
+    const s = new Date(sorted[0] + 'T12:00:00');
+    const e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+    calContext = 'step2';
+    if (fpStep2Start && fpStep2End && fpStep2Start.setDate && fpStep2End.setDate) {
+        fpStep2Start.setDate(s, false);
+        fpStep2End.setDate(e, false);
+    }
+}
+
+function ensureStep2FlatpickrInited() {
+    if (!document.getElementById('s2-date-start')) return;
+    if (fpStep2Start && fpStep2End) return;
+    initStep2FlatpickrPair(undefined, todayAtLocalNoon());
+    const saved = readPeriodoUiState('s2');
+    if (!saved || saved.modo !== 'atajos') {
+        setStep2PeriodoModo('manual');
+    }
+}
+
+if (document.getElementById('s2-date-start')) {
+    loadCalendarState();
+    ensureStep2FlatpickrInited();
+    installPeriodoModeFocusHandlers();
+    refreshPeriodoModeUi('s2');
+    refreshPeriodoModeUi('ma');
+    hydrateLastSelectedMonthFromSession('s2');
+    hydrateLastSelectedMonthFromSession('ma');
+} else {
+    /* Sin controles de periodo en el DOM (p. ej. visión HTML mínima). */
+}
+
+// ═══════════════════════════ NAVIGATION ══════════════════════════════
+function tryGoStep(n) { if (unlockedSteps.has(n)) goStep(n); }
+function goStep(n) {
+    const panel = document.getElementById('step-' + n);
+    if (!panel) return;
+    unlockedSteps.add(n);
+    currentStep = n;
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    panel.classList.add('active');
+    updateStepNav();
+    window.scrollTo({ top:0, behavior:'smooth' });
+    if (n === 3) {
+        runAnalysis();
+    }
+    if (n === 2 && document.getElementById('s2-quick-year')) {
+        buildRecords();
+        ensureStep2GridCoversRecordsBounds();
+        const awSorted = (allWeekdays && allWeekdays.length) ? [...allWeekdays].sort() : [];
+        const py = awSorted.length ? awSorted[awSorted.length - 1].slice(0, 4) : '';
+        fillQuickYearMonth('s2', py);
+        restorePeriodoUiAfterInit('s2');
+        hydrateLastSelectedMonthFromSession('s2');
+        syncStep2FlatpickrToAllWeekdaysEdges();
+    }
+}
+function updateStepNav() {
+    if (!document.getElementById('snav-1')) return;
+    for (let i = 1; i <= 3; i++) {
+        const btn  = document.getElementById('snav-' + i);
+        const icon = document.getElementById('sicon-' + i);
+        const done = unlockedSteps.has(i) && i < currentStep;
+        icon.textContent = done ? '✓' : i;
+        if (i === currentStep) {
+            btn.className  = 'flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 border-blue-600 text-blue-700 cursor-pointer';
+            icon.className = 'w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold';
+        } else if (unlockedSteps.has(i)) {
+            btn.className  = 'flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-blue-600 cursor-pointer';
+            icon.className = 'w-6 h-6 rounded-full bg-gray-400 text-white flex items-center justify-center text-xs font-bold';
+        } else {
+            btn.className  = 'flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 border-transparent text-gray-300 pointer-events-none';
+            icon.className = 'w-6 h-6 rounded-full bg-gray-200 text-gray-400 flex items-center justify-center text-xs font-bold';
+        }
+    }
+}
+
+// ═══════════════════════════ UTILITIES ═══════════════════════════════
+function isoDate(d) { return d.toISOString().split('T')[0]; }
+/** Mediodía local del día en que se abre la página (fecha fin por defecto en selectores). */
+function todayAtLocalNoon() {
+    const d = new Date();
+    d.setHours(12, 0, 0, 0);
+    return d;
+}
+function norm(s) { return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); }
+
+function findCol(headers, ...patterns) {
+    return headers.findIndex(h => patterns.some(p => norm(h).includes(norm(p))));
+}
+
+/** Convierte número serial de Excel (p. ej. 45897) a YYYY-MM-DD. */
+function parseExcelSerialDate(str) {
+    const n = Number(str);
+    if (!Number.isFinite(n) || n < 20000 || n > 80000) return null;
+    if (typeof XLSX !== 'undefined' && XLSX.SSF && typeof XLSX.SSF.parse_date_code === 'function') {
+        const dc = XLSX.SSF.parse_date_code(n);
+        if (dc && dc.y >= 1900 && dc.y <= 2100) {
+            const d = new Date(dc.y, dc.m - 1, dc.d, 12, 0, 0, 0);
+            if (!isNaN(d.getTime())) return isoDate(d);
+        }
+    }
+    const epoch = new Date(1899, 11, 30, 12, 0, 0, 0);
+    const d = new Date(epoch.getTime() + Math.round(n * 86400000));
+    if (isNaN(d.getTime()) || d.getFullYear() < 1900 || d.getFullYear() > 2100) return null;
+    return isoDate(d);
+}
+
+function expandTwoDigitYear(yy) {
+    const y = Number(yy);
+    if (!Number.isFinite(y) || y < 0 || y > 99) return null;
+    return y <= 50 ? 2000 + y : 1900 + y;
+}
+
+function parseSlashOrDashDate(str) {
+    const m4 = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+    if (m4) {
+        const d = new Date(+m4[3], +m4[1] - 1, +m4[2], 12, 0, 0, 0);
+        if (!isNaN(d.getTime())) return isoDate(d);
+    }
+    const m2 = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2})$/);
+    if (m2) {
+        const year = expandTwoDigitYear(m2[3]);
+        if (year == null) return null;
+        const d = new Date(year, +m2[1] - 1, +m2[2], 12, 0, 0, 0);
+        if (!isNaN(d.getTime())) return isoDate(d);
+    }
+    return null;
+}
+
+function parseFlexDate(str) {
+    if (str == null) return null;
+    str = String(str).trim();
+    if (!str) return null;
+    if (/^\d{4}-\d{2}-\d{2}/.test(str)) return str.substring(0, 10);
+    const sp = str.match(/(\d{1,2})\s+de\s+([\wáéíóúñÁÉÍÓÚÑ]+)\s+de\s+(\d{4})/i);
+    if (sp) {
+        const mi = MESES_MAP[norm(sp[2])];
+        if (mi !== undefined) { const d = new Date(+sp[3], mi, +sp[1]); return isoDate(d); }
+    }
+    const slash = parseSlashOrDashDate(str);
+    if (slash) return slash;
+    if (/^\d+(\.\d+)?$/.test(str)) return parseExcelSerialDate(str);
+    return null;
+}
+
+function findFechaCatalogacionCol(headers) {
+    let idx = headers.findIndex(h => {
+        const n = norm(h);
+        return n.includes('fecha de catalogaci') && !n.includes('cotejo');
+    });
+    if (idx >= 0) return idx;
+    idx = findCol(headers, 'fecha catalogaci');
+    if (idx >= 0 && !norm(headers[idx]).includes('cotejo')) return idx;
+    return findCol(headers, 'fecha');
+}
+
+function isDuplicateHeaderRow(cols, cFecha, cTitulo) {
+    const fecha = norm(cols[cFecha]);
+    const titulo = cTitulo >= 0 ? norm(cols[cTitulo]) : '';
+    return fecha === 'fecha' || titulo === 'titulo';
+}
+
+/** Exporta hoja Excel a TSV normalizando fechas numéricas a YYYY-MM-DD. */
+function formatImportCellValue(cell) {
+    if (!cell || cell.v == null || cell.v === '') return '';
+    if (cell.t === 'd') {
+        const dv = cell.v instanceof Date ? cell.v : new Date(cell.v);
+        if (!isNaN(dv.getTime())) {
+            return isoDate(new Date(dv.getFullYear(), dv.getMonth(), dv.getDate(), 12, 0, 0, 0));
+        }
+    }
+    if (cell.t === 'n' && typeof cell.v === 'number') {
+        const serialIso = parseExcelSerialDate(String(cell.v));
+        if (serialIso) return serialIso;
+    }
+    if (cell.w != null && cell.w !== '') return String(cell.w);
+    return String(cell.v);
+}
+
+function sheetToImportTsv(sheet) {
+    if (!sheet || !sheet['!ref']) return '';
+    const range = XLSX.utils.decode_range(sheet['!ref']);
+    const lines = [];
+    for (let R = range.s.r; R <= range.e.r; R++) {
+        const row = [];
+        for (let C = range.s.c; C <= range.e.c; C++) {
+            const addr = XLSX.utils.encode_cell({ r: R, c: C });
+            row.push(formatImportCellValue(sheet[addr]));
+        }
+        lines.push(row.join('\t'));
+    }
+    return lines.join('\n').trim();
+}
+
+function extractDeweyClass(clasificacion) {
+    if (!clasificacion || !clasificacion.trim()) return 'NC';
+    // Strip leading non-numeric prefix (e.g. "F ", "REF ", "SP ")
+    const stripped = clasificacion.trim().replace(/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+/, '');
+    const m = stripped.match(/^(\d+)/);
+    if (!m) return 'NC';
+    const n = parseInt(m[1]);
+    if (n >= 0 && n <= 999) return String(Math.floor(n / 10)).padStart(2, '0');
+    return 'NC';
+}
+
+// ═══════════════════════════ TSV PARSING ═════════════════════════════
+function parseTablaA(text) {
+    const rows = text.trim().split('\n').filter(r => r.trim());
+    if (rows.length < 2) return [];
+    const headers = rows[0].split('\t');
+    const cClasif = findCol(headers, 'clasificaci');
+    const cColec  = findCol(headers, 'colecci');
+    const cNuevo  = findCol(headers, 'nuevo registro', '¿nuevo', 'nuevo reg');
+    const cTitulo = findCol(headers, 'titulo', 'título');
+    const cFecha  = findFechaCatalogacionCol(headers);
+
+    const result = [];
+    for (let i = 1; i < rows.length; i++) {
+        const cols  = rows[i].split('\t');
+        if (cols.length < 2) continue;
+        if (isDuplicateHeaderRow(cols, cFecha, cTitulo)) continue;
+        const fecha = parseFlexDate(cols[cFecha]);
+        if (!fecha) continue;
+        const nuevoRaw = (cols[cNuevo] || '').trim().toLowerCase();
+        const status   = (nuevoRaw === 'no') ? 'propio' : 'nuevo';
+        result.push({
+            date: fecha, status,
+            coleccion:    (cols[cColec]  || '').trim() || 'Sin colección',
+            clasificacion:(cols[cClasif] || '').trim()
+        });
+    }
+    return result;
+}
+
+function parseTablaB(text) {
+    const rows = text.trim().split('\n').filter(r => r.trim());
+    if (rows.length < 2) return [];
+    const headers = rows[0].split('\t');
+    const cClasif = findCol(headers, 'clasificaci');
+    const cColec  = findCol(headers, 'colecci');
+    const cFecha  = findCol(headers, 'fecha');
+    const cTitulo = findCol(headers, 'titulo', 'título');
+
+    const result = [];
+    for (let i = 1; i < rows.length; i++) {
+        const cols  = rows[i].split('\t');
+        if (cols.length < 2) continue;
+        if (isDuplicateHeaderRow(cols, cFecha, cTitulo)) continue;
+        const fecha = parseFlexDate(cols[cFecha]);
+        if (!fecha) continue;
+        result.push({
+            date: fecha, status: 'existente',
+            coleccion:    (cols[cColec]  || '').trim() || 'Sin colección',
+            clasificacion:(cols[cClasif] || '').trim()
+        });
+    }
+    return result;
+}
+
+function computeRecordsDataFingerprint() {
+    const n = records.length;
+    if (!n) return '|0';
+    let bestTs = -Infinity;
+    let bestIso = '';
+    for (let i = 0; i < n; i++) {
+        const d = (records[i] && records[i].date) ? String(records[i].date).trim() : '';
+        if (!d) continue;
+        const iso = d.length >= 10 ? d.slice(0, 10) : d;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
+        const t = new Date(iso + 'T12:00:00').getTime();
+        if (!isNaN(t) && t >= bestTs) {
+            bestTs = t;
+            bestIso = iso;
+        }
+    }
+    return (bestIso || 'no-valid-date') + '|' + n;
+}
+
+function clearAtajosMonthFieldsInPeriodoSession(key) {
+    if (typeof sessionStorage === 'undefined') return;
+    try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return;
+        const o = JSON.parse(raw);
+        if (!o || typeof o !== 'object') return;
+        o.lastAy = '';
+        o.lastAmo = '';
+        sessionStorage.setItem(key, JSON.stringify(o));
+    } catch (e) {}
+}
+
+function invalidateQuickMonthMemoryIfRecordsChanged() {
+    const fp = computeRecordsDataFingerprint();
+    if (fp === lastRecordsDataFingerprint) return;
+    lastRecordsDataFingerprint = fp;
+    clearAtajosMonthFieldsInPeriodoSession(PERIODO_UI_SESSION_S2);
+    clearAtajosMonthFieldsInPeriodoSession(PERIODO_UI_SESSION_MA);
+    lastSelectedMonthState.s2 = { y: '', mo: '' };
+    lastSelectedMonthState.ma = { y: '', mo: '' };
+    lastManualRangeState.s2 = { startIso: '', endIso: '' };
+    lastManualRangeState.ma = { startIso: '', endIso: '' };
+}
+
+function buildRecords() {
+    const ta = document.getElementById('tablaA');
+    const tb = document.getElementById('tablaB');
+    if (!ta || !tb) return;
+    records = [...parseTablaA(ta.value), ...parseTablaB(tb.value)];
+    invalidateQuickMonthMemoryIfRecordsChanged();
+}
+
+// Live feedback (bajo cada textarea)
+function updateInputCounts() {
+    const ta = document.getElementById('tablaA');
+    const tb = document.getElementById('tablaB');
+    if (!ta || !tb) return;
+    const a = parseTablaA(ta.value).length;
+    const b = parseTablaB(tb.value).length;
+    const elA = document.getElementById('countLineA');
+    const elB = document.getElementById('countLineB');
+    if (elA) elA.textContent = `Cantidad registros bibliográficos: ${a}`;
+    if (elB) elB.textContent = `Cantidad registros añadidos: ${b}`;
+}
+function liveCountA() { updateInputCounts(); }
+function liveCountB() { updateInputCounts(); }
+const tablaAEl = document.getElementById('tablaA');
+const tablaBEl = document.getElementById('tablaB');
+if (tablaAEl) tablaAEl.addEventListener('input', liveCountA);
+if (tablaBEl) tablaBEl.addEventListener('input', liveCountB);
+updateInputCounts();
+
+const uploadDropzone = document.getElementById('uploadDropzone');
+const excelAmbasInput = document.getElementById('excelAmbas');
+const uploadFileName = document.getElementById('uploadFileName');
+
+if (uploadDropzone && excelAmbasInput) {
+    ['dragenter', 'dragover'].forEach(evt => {
+        uploadDropzone.addEventListener(evt, e => {
+            e.preventDefault();
+            uploadDropzone.classList.add('dragover');
+        });
+    });
+    ['dragleave', 'drop'].forEach(evt => {
+        uploadDropzone.addEventListener(evt, e => {
+            e.preventDefault();
+            uploadDropzone.classList.remove('dragover');
+        });
+    });
+    uploadDropzone.addEventListener('drop', e => {
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        excelAmbasInput.files = dt.files;
+        cargarExcelAutomatico('excelAmbas');
+    });
+}
+
+function textoNormalizado(s) {
+    return (s || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+}
+
+function scoreHoja(sheetName, csvText, target) {
+    const name = textoNormalizado(sheetName);
+    const csv  = textoNormalizado(csvText);
+    let score = 0;
+
+    if (target === 'A') {
+        if (name.includes('catalogad')) score += 5;
+        if (csv.includes('nuevo registro bibliografico')) score += 8;
+        if (csv.includes('fecha de catalogacion')) score += 4;
+        if (csv.includes('tipo de catalogacion')) score += 3;
+    } else {
+        if (name.includes('item')) score += 5;
+        if (name.includes('anadid') || name.includes('añadid')) score += 4;
+        if (csv.includes('item id')) score += 8;
+        if (csv.includes('especialidad')) score += 3;
+        if (csv.includes('\tfecha') || csv.includes(',fecha')) score += 2;
+    }
+
+    return score;
+}
+
+function seleccionarMejorHoja(workbook, target, excludedName = null) {
+    const names = workbook.SheetNames || [];
+    const normalizedNames = names.map(n => ({ raw: n, norm: textoNormalizado(n) }));
+
+    // 1) Prefer explicit sheet names (most reliable for your workbook)
+    if (target === 'A') {
+        const byName = normalizedNames.find(n =>
+            n.norm.includes('catalogados') ||
+            (n.norm.includes('catalogad') && n.norm.includes('2025'))
+        );
+        if (byName && (!excludedName || byName.raw !== excludedName)) {
+            const sheet = workbook.Sheets[byName.raw];
+            const csv = sheetToImportTsv(sheet);
+            if (csv) return { name: byName.raw, csv, score: 999 };
+        }
+    } else {
+        const byName = normalizedNames.find(n =>
+            (n.norm.includes('items') && (n.norm.includes('anadidos') || n.norm.includes('añadidos'))) ||
+            (n.norm.includes('item') && n.norm.includes('2025'))
+        );
+        if (byName && (!excludedName || byName.raw !== excludedName)) {
+            const sheet = workbook.Sheets[byName.raw];
+            const csv = sheetToImportTsv(sheet);
+            if (csv) return { name: byName.raw, csv, score: 999 };
+        }
+    }
+
+    // 2) Fallback to content/header scoring
+    const hojas = names
+        .filter(name => !excludedName || name !== excludedName)
+        .map(name => {
+            const sheet = workbook.Sheets[name];
+            const csv = sheetToImportTsv(sheet);
+            return { name, csv, score: scoreHoja(name, csv, target) };
+        })
+        .filter(h => h.csv.length > 0)
+        .sort((a, b) => b.score - a.score);
+    return hojas[0] || null;
+}
+
+async function cargarExcelAutomatico(fileInputId) {
+    const input = document.getElementById(fileInputId);
+    const file = input?.files?.[0];
+    if (!file) {
+        alert('Selecciona primero un archivo Excel o CSV.');
+        return;
+    }
+    if (uploadFileName) uploadFileName.textContent = file.name;
+
+    try {
+        const buffer = await file.arrayBuffer();
+        const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+        const names = workbook.SheetNames || [];
+        if (!names.length) {
+            alert('El archivo no contiene hojas.');
+            return;
+        }
+        const mejorA = seleccionarMejorHoja(workbook, 'A');
+        const mejorB = seleccionarMejorHoja(workbook, 'B', mejorA?.name || null);
+        if (!mejorA && !mejorB) {
+            alert('No hay datos utilizables en las hojas.');
+            return;
+        }
+        const fallback = sheetToImportTsv(workbook.Sheets[names[0]]);
+        const tablaA = mejorA?.csv || fallback;
+        const tablaB = mejorB?.csv || fallback;
+
+        document.getElementById('tablaA').value = tablaA;
+        document.getElementById('tablaB').value = tablaB;
+        liveCountA();
+        liveCountB();
+    } catch (e) {
+        console.error(e);
+        alert('No se pudo leer el archivo. Verifica que sea un Excel/CSV válido.');
+    }
+}
+
+function isSnapshotReport() {
+    return document.documentElement.classList.contains('snapshot-report');
+}
+
+function formatReportGeneratedDate(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('es-ES', {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+
+function updateReportGeneratedBadge(iso) {
+    const badge = document.getElementById('reportGeneratedBadge');
+    const timeEl = document.getElementById('reportGeneratedAt');
+    if (!badge || !timeEl || !iso) return;
+    const label = formatReportGeneratedDate(iso);
+    if (!label) return;
+    const d = new Date(iso);
+    timeEl.dateTime = isNaN(d.getTime()) ? iso : d.toISOString().slice(0, 10);
+    timeEl.textContent = label;
+    badge.setAttribute('aria-label', 'Última actualización: ' + label);
+    badge.classList.add('is-populated');
+}
+
+function mergeInstitutionalDisabledDays() {
+    for (const [a, b] of INSTITUTIONAL_DISABLED_RANGES) {
+        for (const iso of allWeekdays) {
+            if (iso >= a && iso <= b) disabledDays.add(iso);
+        }
+    }
+}
+
+/** IDs de la grilla según calContext (paso 2 vs modal). */
+function calBodyEl() {
+    return document.getElementById(calContext === 'modal' ? 'ma-calBody' : 'calBody');
+}
+function calGridWrapEl() {
+    return document.getElementById(calContext === 'modal' ? 'ma-calGrid' : 'calGrid');
+}
+function dayCellId(iso) {
+    return (calContext === 'modal' ? 'ma-dc-' : 'dc-') + iso;
+}
+function weekBtnId(wi) {
+    return (calContext === 'modal' ? 'ma-wb-' : 'wb-') + wi;
+}
+function sumValidEl() {
+    return document.getElementById(calContext === 'modal' ? 'ma-sumValid' : 'sumValid');
+}
+function sumDetailEl() {
+    return document.getElementById(calContext === 'modal' ? 'ma-sumDetail' : 'sumDetail');
+}
+
+function getDataDateBounds() {
+    if (!records.length) return { min: null, max: null };
+    const sorted = records.map(r => r.date).filter(Boolean).sort();
+    return { min: sorted[0], max: sorted[sorted.length - 1] };
+}
+
+/** Al pasar de «Por meses» a rangos: inicio = primera fecha en datos, fin = hoy (acotado al min–max de datos). */
+function getManualRangeDataMinToTodayClamped() {
+    const b = getDataDateBounds();
+    if (!b.min || !b.max) return null;
+    const minD = new Date(b.min + 'T12:00:00');
+    const maxD = new Date(b.max + 'T12:00:00');
+    if (isNaN(minD.getTime()) || isNaN(maxD.getTime())) return null;
+    let e = todayAtLocalNoon();
+    if (e < minD) e = new Date(minD);
+    if (e > maxD) e = new Date(maxD);
+    return [minD, e];
+}
+
+/** Si no hay grilla o no cubre el min–max de fechas en `records`, inicializa el paso 2 con ese rango. */
+function ensureStep2GridCoversRecordsBounds() {
+    if (!document.getElementById('s2-date-start')) return;
+    const b = getDataDateBounds();
+    if (!b.min || !b.max) return;
+    /* No expandir al min–max global si el usuario ya acotó periodo (atajos o rangos manuales). */
+    const puS2 = readPeriodoUiState('s2');
+    if (allWeekdays && allWeekdays.length) {
+        const atajosUi = periodoModoGet('s2') === 'atajos';
+        const atajosSesion = puS2 && puS2.modo === 'atajos';
+        if (atajosUi || atajosSesion) {
+            const ySel = document.getElementById('s2-quick-year');
+            const mSel = document.getElementById('s2-quick-month');
+            const yOk = ySel && ySel.value;
+            const moOk = mSel && mSel.value;
+            const ySes = puS2 && (puS2.lastAy || puS2.y);
+            const moSes = puS2 && (puS2.lastAmo || puS2.mo);
+            if ((yOk && moOk) || (atajosSesion && ySes && moSes)) {
+                return;
+            }
+        }
+        const manualUi = periodoModoGet('s2') === 'manual';
+        const manualSesion = puS2 && puS2.modo === 'manual';
+        if (manualUi || manualSesion) {
+            const mem = lastManualRangeState.s2;
+            const memOk = !!(mem && mem.startIso && mem.endIso);
+            let fpOk = false;
+            if (fpStep2Start && fpStep2End) {
+                const ds = fpStep2Start.selectedDates && fpStep2Start.selectedDates[0];
+                const de = fpStep2End.selectedDates && fpStep2End.selectedDates[0];
+                fpOk = !!(ds && de);
+            }
+            const elS = document.getElementById('s2-date-start');
+            const elE = document.getElementById('s2-date-end');
+            const isoRe = /^\d{4}-\d{2}-\d{2}$/;
+            const inpOk = !!(elS && elE && elS.value && elE.value && isoRe.test(elS.value) && isoRe.test(elE.value));
+            if (memOk || fpOk || inpOk) {
+                return;
+            }
+        }
+    }
+    let need = !allWeekdays || !allWeekdays.length;
+    if (!need) {
+        const sorted = [...allWeekdays].sort();
+        const curMin = sorted[0];
+        const curMax = sorted[sorted.length - 1];
+        if (curMin > b.min || curMax < b.max) need = true;
+    }
+    if (!need) return;
+    const s = new Date(b.min + 'T12:00:00');
+    const e = new Date(b.max + 'T12:00:00');
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return;
+    initStep2FlatpickrPair(s, e);
+    calContext = 'step2';
+    buildCalGrid(s, e, { fromPersistence: false });
+    const calGrid = document.getElementById('calGrid');
+    if (calGrid) calGrid.classList.remove('hidden');
+}
+
+function inferAllWeekdaysFromValidDays(validDays) {
+    if (!validDays || !validDays.length) return [];
+    const sorted = [...validDays].sort();
+    const s = new Date(sorted[0] + 'T12:00:00');
+    const e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+    const out = [];
+    const cur = new Date(s);
+    cur.setHours(0, 0, 0, 0);
+    const end = new Date(e);
+    end.setHours(0, 0, 0, 0);
+    while (cur <= end) {
+        const dow = cur.getDay();
+        if (dow >= 1 && dow <= 5) out.push(isoDate(cur));
+        cur.setDate(cur.getDate() + 1);
+    }
+    return out;
+}
+
+function mondayOf(date) {
+    const d = new Date(date); d.setHours(0, 0, 0, 0);
+    const day = d.getDay();
+    d.setDate(d.getDate() + (day === 0 ? -6 : 1 - day));
+    return d;
+}
+
+function buildCalGrid(start, end, opts = {}) {
+    const restoreDisabled = opts.restoreDisabled;
+    disabledDays = new Set(); allWeekdays = []; weekRanges = [];
+    const s = new Date(start); s.setHours(0,0,0,0);
+    const e = new Date(end);   e.setHours(0,0,0,0);
+    const ML = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    let wMon = mondayOf(s);
+    while (wMon <= e) {
+        const days = [];
+        for (let i = 0; i < 5; i++) {
+            const d = new Date(wMon); d.setDate(d.getDate()+i); d.setHours(0,0,0,0);
+            const iso = isoDate(d);
+            days.push((d >= s && d <= e) ? iso : null);
+            if (d >= s && d <= e) allWeekdays.push(iso);
+        }
+        weekRanges.push({ label: `${wMon.getDate()} ${ML[wMon.getMonth()]}`, days });
+        wMon.setDate(wMon.getDate() + 7);
+    }
+    const inRange = new Set(allWeekdays);
+    if (Array.isArray(restoreDisabled)) {
+        restoreDisabled.forEach(d => { if (inRange.has(d)) disabledDays.add(d); });
+    }
+    mergeInstitutionalDisabledDays();
+    renderCalTable();
+    applyDisabledVisuals();
+    updateCalSummary();
+    saveCalendarState();
+}
+
+function applyDisabledVisuals() {
+    allWeekdays.forEach(iso => {
+        const cell = document.getElementById(dayCellId(iso));
+        if (cell) cell.className = disabledDays.has(iso) ? 'day-cell disabled-day' : 'day-cell enabled';
+    });
+    weekRanges.forEach((_, wi) => {
+        const btn = document.getElementById(weekBtnId(wi));
+        if (btn) { btn.className = wBtnClass(wi); btn.textContent = wBtnLabel(wi); }
+    });
+}
+function wBtnClass(wi) {
+    const ir  = weekRanges[wi].days.filter(d => d);
+    const off = ir.length > 0 && ir.every(d => disabledDays.has(d));
+    return 'text-xs px-3 py-1.5 rounded-lg border font-medium transition ' +
+        (off ? 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100'
+              : 'bg-red-50 border-red-300 text-red-700 hover:bg-red-100');
+}
+function wBtnLabel(wi) {
+    const ir = weekRanges[wi].days.filter(d => d);
+    return (ir.length > 0 && ir.every(d => disabledDays.has(d))) ? 'Habilitar semana' : 'Inhabilitar semana';
+}
+function renderCalTable() {
+    const tbody = calBodyEl();
+    if (!tbody) return;
+    tbody.innerHTML = '';
+    weekRanges.forEach((week, wi) => {
+        const tr = document.createElement('tr'); tr.className = 'border-t border-gray-100 hover:bg-gray-50/50';
+        const tdL = document.createElement('td'); tdL.className = 'py-2 px-4 text-left text-xs text-gray-500 font-semibold whitespace-nowrap';
+        tdL.textContent = 'Sem. ' + week.label; tr.appendChild(tdL);
+        week.days.forEach(iso => {
+            const td = document.createElement('td'); td.className = 'py-2';
+            const cell = document.createElement('div');
+            if (!iso) { cell.className = 'day-cell out-range'; }
+            else {
+                cell.id = dayCellId(iso); cell.className = 'day-cell enabled';
+                cell.textContent = parseInt(iso.split('-')[2]); cell.title = iso;
+                cell.onclick = () => toggleDay(iso);
+            }
+            td.appendChild(cell); tr.appendChild(td);
+        });
+        const tdA = document.createElement('td'); tdA.className = 'py-2 px-4 text-right';
+        const btn = document.createElement('button'); btn.id = weekBtnId(wi);
+        btn.className = wBtnClass(wi); btn.textContent = wBtnLabel(wi); btn.onclick = () => toggleWeek(wi);
+        tdA.appendChild(btn); tr.appendChild(tdA); tbody.appendChild(tr);
+    });
+}
+function toggleDay(iso) {
+    const cell = document.getElementById(dayCellId(iso));
+    if (disabledDays.has(iso)) { disabledDays.delete(iso); if (cell) cell.className = 'day-cell enabled'; }
+    else                       { disabledDays.add(iso);    if (cell) cell.className = 'day-cell disabled-day'; }
+    updateWBtn(iso); updateCalSummary();
+    saveCalendarState();
+}
+function toggleWeek(wi) {
+    const ir  = weekRanges[wi].days.filter(d => d);
+    const off = ir.every(d => disabledDays.has(d));
+    ir.forEach(iso => {
+        const cell = document.getElementById(dayCellId(iso));
+        if (off) { disabledDays.delete(iso); if (cell) cell.className = 'day-cell enabled'; }
+        else     { disabledDays.add(iso);    if (cell) cell.className = 'day-cell disabled-day'; }
+    });
+    const btn = document.getElementById(weekBtnId(wi));
+    if (btn) { btn.className = wBtnClass(wi); btn.textContent = wBtnLabel(wi); }
+    updateCalSummary();
+    saveCalendarState();
+}
+function updateWBtn(iso) {
+    weekRanges.forEach((_, wi) => {
+        if (weekRanges[wi].days.includes(iso)) {
+            const btn = document.getElementById(weekBtnId(wi));
+            if (btn) { btn.className = wBtnClass(wi); btn.textContent = wBtnLabel(wi); }
+        }
+    });
+}
+function resetDays() {
+    disabledDays = new Set();
+    allWeekdays.forEach(iso => { const c = document.getElementById(dayCellId(iso)); if (c) c.className = 'day-cell enabled'; });
+    weekRanges.forEach((_, wi) => { const b = document.getElementById(weekBtnId(wi)); if (b) { b.className = wBtnClass(wi); b.textContent = wBtnLabel(wi); } });
+    updateCalSummary();
+    saveCalendarState();
+}
+function updateCalSummary() {
+    const elV = sumValidEl();
+    const elD = sumDetailEl();
+    if (!elV || !elD) return;
+    const total = allWeekdays.length, inhab = disabledDays.size, valid = total - inhab;
+    elV.textContent  = valid;
+    elD.textContent = inhab > 0 ? `${total} total − ${inhab} inhabilitados` : `${total} días laborales`;
+}
+
+// ═══════════════════════════ ANALYSIS ════════════════════════════════
+function generateAndGo() {
+    buildRecords();
+    ensureStep2GridCoversRecordsBounds();
+    if (allWeekdays.length === 0) { alert('Por favor, selecciona primero un rango de fechas.'); return; }
+    goStep(3);
+}
+
+function runAnalysis() {
+    const validDays  = allWeekdays.filter(d => !disabledDays.has(d));
+    const totalLabor = validDays.length;
+    statsGlobal = { totalLabor, validDays };
+    // #region agent log
+    fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:runAnalysis',message:'runAnalysis_window',data:{calContext:typeof calContext!=='undefined'?calContext:'',allWeekdaysLen:allWeekdays.length,minIso:allWeekdays.length?[...allWeekdays].sort()[0]:'',maxIso:allWeekdays.length?[...allWeekdays].sort()[allWeekdays.length-1]:'',validDaysLen:validDays.length,disabledLen:disabledDays.size},timestamp:Date.now(),hypothesisId:'window-respect'})}).catch(function(){});
+    // #endregion
+
+    const elLab = document.getElementById('sTotalLabor');
+    if (elLab) elLab.textContent = totalLabor;
+
+    refreshCatStats();
+    renderMonthlyTab();
+    renderDeweyTab();
+    renderColeccionTab();
+}
+
+// Filter records by category
+function getFilteredRecords(cat) {
+    return records.filter(r => {
+        if (cat === 'todos')     return true;
+        if (cat === 'nuevo')     return r.status === 'nuevo';
+        if (cat === 'propio')    return r.status === 'propio';
+        if (cat === 'existente') return r.status === 'existente';
+        if (cat === 'anadidos')  return r.status === 'propio' || r.status === 'existente';
+        return true;
+    });
+}
+
+// Build daily counts map for a category
+function getDailyCounts(cat, validDays) {
+    const validSet = new Set(validDays);
+    const counts   = {};
+    validDays.forEach(d => { counts[d] = 0; });
+    getFilteredRecords(cat).forEach(r => {
+        if (validSet.has(r.date)) counts[r.date] = (counts[r.date] || 0) + 1;
+    });
+    return counts;
+}
+
+// Compute extended statistics from daily counts
+function calcStats(counts) {
+    const allVals    = Object.values(counts);
+    const activeVals = allVals.filter(v => v > 0);
+    if (!activeVals.length) return { total:0, daysActive:0, avg:0, median:0, max:0, maxDate:'—', min:0, minDate:'—', moda:0, modaDays:0 };
+
+    const total = allVals.reduce((a, b) => a + b, 0);
+    const daysActive = activeVals.length;
+    const maxVal  = Math.max(...allVals);
+    const maxDate = Object.entries(counts).find(([, v]) => v === maxVal)?.[0] || '—';
+    const minVal  = Math.min(...activeVals);
+    const minDate = Object.entries(counts).find(([, v]) => v === minVal)?.[0] || '—';
+
+    const sorted = [...activeVals].sort((a, b) => a - b);
+    const mid    = Math.floor(sorted.length / 2);
+    const median = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+
+    const freq = {};
+    activeVals.forEach(v => { freq[v] = (freq[v] || 0) + 1; });
+    const [moda, modaDays] = Object.entries(freq).reduce((a, b) => b[1] > a[1] ? b : a);
+
+    return { total, daysActive, avg: total / daysActive, median, max:maxVal, maxDate, min:minVal, minDate, moda:+moda, modaDays };
+}
+
+// Refresh stats cards + daily chart
+function refreshCatStats() {
+    if (!statsGlobal) return;
+    const { totalLabor, validDays } = statsGlobal;
+    const counts = getDailyCounts(selectedCat, validDays);
+    const s      = calcStats(counts);
+
+    const isActive = analysisMode === 'active';
+    const avg    = isActive ? (s.daysActive > 0 ? s.avg : 0) : (totalLabor > 0 ? s.total / totalLabor : 0);
+    const avgLbl = isActive ? 'Promedio / día activo' : 'Promedio / día laboral';
+    const avgDen = isActive ? `sobre ${s.daysActive} días activos` : `sobre ${totalLabor} días laborales`;
+
+    document.getElementById('sTotal').textContent      = s.total;
+    document.getElementById('sDaysActive').textContent = s.daysActive;
+    document.getElementById('sAvgLabel').textContent   = avgLbl;
+    document.getElementById('sAvg').textContent        = avg.toFixed(2);
+    document.getElementById('sAvgDenom').textContent   = avgDen;
+    document.getElementById('sMedian').textContent     = s.median % 1 === 0 ? s.median : s.median.toFixed(1);
+    document.getElementById('sMax').textContent        = s.max;
+    document.getElementById('sMaxDate').textContent    = s.maxDate;
+    document.getElementById('sMin').textContent        = s.min;
+    document.getElementById('sMinDate').textContent    = `menor día activo: ${s.minDate}`;
+    document.getElementById('sModa').textContent       = s.moda;
+    document.getElementById('sModaDays').textContent   = `(${s.modaDays} días con ese valor)`;
+
+    renderMainChart(counts, validDays);
+}
+
+// ═══════════════════════════ CHARTS ══════════════════════════════════
+function destroyChart(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function renderMainChart(counts, validDays) {
+    destroyChart('main');
+    if (typeof Chart === 'undefined') return;
+    const labels   = [...validDays].sort();
+    const validSet = new Set(validDays);
+    document.getElementById('chartMainLabel').textContent = CAT_LABELS[selectedCat] || '';
+    const ctx = document.getElementById('chartMain').getContext('2d');
+
+    const isStacked = selectedCat === 'todos' || selectedCat === 'anadidos';
+
+    if (isStacked) {
+        // Build per-status daily counts for the filtered records
+        const byStatus = {};
+        validDays.forEach(d => { byStatus[d] = { nuevo: 0, propio: 0, existente: 0 }; });
+        getFilteredRecords(selectedCat).forEach(r => {
+            if (validSet.has(r.date)) byStatus[r.date][r.status]++;
+        });
+
+        const datasets = [];
+        if (selectedCat === 'todos' || selectedCat === 'anadidos') {
+            if (selectedCat === 'todos')
+                datasets.push({ label:'Nuevos Bibliográficos', data: labels.map(d => byStatus[d].nuevo), backgroundColor:'#3b82f699', borderColor:'#3b82f6', borderWidth:1.5, stack:'S' });
+            datasets.push({ label:'Ej. Añadidos (Propios)',    data: labels.map(d => byStatus[d].propio),    backgroundColor:'#6366f199', borderColor:'#6366f1', borderWidth:1.5, stack:'S' });
+            datasets.push({ label:'Ej. Añadidos (Existentes)', data: labels.map(d => byStatus[d].existente), backgroundColor:'#a855f799', borderColor:'#a855f7', borderWidth:1.5, stack:'S' });
+        }
+
+        charts['main'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top' } },
+                scales: {
+                    x: { stacked: true, ticks: { maxRotation: 45, font: { size: 10 } } },
+                    y: { stacked: true, beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    } else {
+        const color = CAT_COLORS[selectedCat] || '#3b82f6';
+        const data  = labels.map(d => counts[d] || 0);
+        charts['main'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: CAT_LABELS[selectedCat], data, backgroundColor: color + '99', borderColor: color, borderWidth: 1.5 }] },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { ticks: { maxRotation: 45, font: { size: 10 } } }, y: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+}
+
+function renderMonthlyTab() {
+    destroyChart('mes');
+    if (!statsGlobal) return;
+    const validSet = new Set(statsGlobal.validDays);
+    const byMonth  = {};
+
+    getFilteredRecords(selectedCat).forEach(r => {
+        if (!validSet.has(r.date)) return;
+        const ym = r.date.substring(0, 7);
+        if (!byMonth[ym]) byMonth[ym] = { nuevo: 0, propio: 0, existente: 0 };
+        byMonth[ym][r.status]++;
+    });
+
+    const months = Object.keys(byMonth).sort();
+    if (!months.length) { document.getElementById('tableMonthly').innerHTML = '<p class="text-sm text-gray-400 mt-2">Sin datos en el período para la categoría seleccionada.</p>'; return; }
+
+    const mLabels   = months.map(m => { const [y, mo] = m.split('-'); return MESES_NOMBRES[+mo-1] + ' ' + y; });
+    const isStacked = selectedCat === 'todos' || selectedCat === 'anadidos';
+    const canRenderChart = typeof Chart !== 'undefined';
+
+    let datasets;
+    if (selectedCat === 'todos') {
+        datasets = [
+            { label:'Nuevos Bibliográficos',      data: months.map(m=>byMonth[m].nuevo),     backgroundColor:'#3b82f699', borderColor:'#3b82f6', borderWidth:1.5, stack:'S' },
+            { label:'Ej. Añadidos (Propios)',     data: months.map(m=>byMonth[m].propio),    backgroundColor:'#6366f199', borderColor:'#6366f1', borderWidth:1.5, stack:'S' },
+            { label:'Ej. Añadidos (Existentes)',  data: months.map(m=>byMonth[m].existente), backgroundColor:'#a855f799', borderColor:'#a855f7', borderWidth:1.5, stack:'S' }
+        ];
+    } else if (selectedCat === 'anadidos') {
+        datasets = [
+            { label:'Ej. Añadidos (Propios)',     data: months.map(m=>byMonth[m].propio),    backgroundColor:'#6366f199', borderColor:'#6366f1', borderWidth:1.5, stack:'S' },
+            { label:'Ej. Añadidos (Existentes)',  data: months.map(m=>byMonth[m].existente), backgroundColor:'#a855f799', borderColor:'#a855f7', borderWidth:1.5, stack:'S' }
+        ];
+    } else {
+        const color = CAT_COLORS[selectedCat] || '#3b82f6';
+        const key   = selectedCat; // 'nuevo' | 'propio' | 'existente'
+        datasets = [{ label: CAT_LABELS[selectedCat], data: months.map(m => byMonth[m][key] || 0), backgroundColor: color+'99', borderColor: color, borderWidth:1.5 }];
+    }
+
+    if (canRenderChart) {
+        const ctx = document.getElementById('chartMes').getContext('2d');
+        charts['mes'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels: mLabels, datasets },
+            options: {
+                responsive: true,
+                plugins: { legend: { position: 'top', display: isStacked } },
+                scales: {
+                    x: { stacked: isStacked },
+                    y: { stacked: isStacked, beginAtZero: true, ticks: { precision: 0 } }
+                }
+            }
+        });
+    }
+
+    // Table: columns depend on category
+    let tableHeaders, tableRows;
+    if (selectedCat === 'todos') {
+        tableHeaders = ['Mes','Nuevos Bibl.','Ej. Propios','Ej. Existentes','Total'];
+        tableRows = months.map((m,i) => [
+            mLabels[i],
+            `<span class="text-gray-800">${byMonth[m].nuevo}</span>`,
+            `<span class="text-gray-700">${byMonth[m].propio}</span>`,
+            `<span class="text-gray-600">${byMonth[m].existente}</span>`,
+            `<strong>${byMonth[m].nuevo+byMonth[m].propio+byMonth[m].existente}</strong>`
+        ]);
+    } else if (selectedCat === 'anadidos') {
+        tableHeaders = ['Mes','Ej. Propios','Ej. Existentes','Total'];
+        tableRows = months.map((m,i) => [
+            mLabels[i],
+            `<span class="text-gray-700">${byMonth[m].propio}</span>`,
+            `<span class="text-gray-600">${byMonth[m].existente}</span>`,
+            `<strong>${byMonth[m].propio+byMonth[m].existente}</strong>`
+        ]);
+    } else {
+        const key = selectedCat;
+        tableHeaders = ['Mes', CAT_LABELS[selectedCat]];
+        tableRows = months.map((m,i) => [mLabels[i], `<strong>${byMonth[m][key]||0}</strong>`]);
+    }
+    document.getElementById('tableMonthly').innerHTML = buildTable(tableHeaders, tableRows);
+}
+
+function toggleDeweySort(mode) {
+    deweySortMode = mode;
+    document.getElementById('dsort-count').className  = `text-xs px-3 py-1.5 rounded-lg border font-medium transition ${mode==='count'  ? 'bg-sky-500 text-white border-sky-500' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'}`;
+    document.getElementById('dsort-number').className = `text-xs px-3 py-1.5 rounded-lg border font-medium transition ${mode==='number' ? 'bg-sky-500 text-white border-sky-500' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'}`;
+    renderDeweyTab();
+}
+
+function toggleDeweyLevel(level) {
+    deweyLevel = level;
+    document.getElementById('dlevel-centenas').className = `text-xs px-3 py-1.5 rounded-lg border font-medium transition ${level==='centenas' ? 'bg-sky-500 text-white border-sky-500' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'}`;
+    document.getElementById('dlevel-decenas').className  = `text-xs px-3 py-1.5 rounded-lg border font-medium transition ${level==='decenas'  ? 'bg-sky-500 text-white border-sky-500' : 'bg-white text-gray-500 border-gray-200 hover:border-sky-300'}`;
+    renderDeweyTab();
+}
+
+function renderDeweyTab() {
+    destroyChart('dewey');
+    if (!statsGlobal) return;
+    const validSet = new Set(statsGlobal.validDays);
+    const byDewey  = {};
+
+    getFilteredRecords(selectedCat).forEach(r => {
+        if (!validSet.has(r.date)) return;
+        const decena = extractDeweyClass(r.clasificacion);
+        const key = deweyLevel === 'centenas'
+            ? (decena === 'NC' ? 'NC' : String(Math.floor(parseInt(decena, 10) / 10)))
+            : decena;
+        byDewey[key] = (byDewey[key] || 0) + 1;
+    });
+
+    if (!Object.keys(byDewey).length) { document.getElementById('tableDewey').innerHTML = '<p class="text-sm text-gray-400 mt-2">Sin datos de clasificación para la categoría seleccionada.</p>'; return; }
+
+    const sorted = deweySortMode === 'number'
+        ? Object.entries(byDewey).sort((a, b) => {
+            const ka = a[0] === 'NC' ? 9999 : +a[0];
+            const kb = b[0] === 'NC' ? 9999 : +b[0];
+            return ka - kb;
+          })
+        : Object.entries(byDewey).sort((a, b) => b[1] - a[1]);
+
+    const labels     = sorted.map(([k]) => deweyLevel === 'centenas' ? (DEWEY_HUNDREDS_LABELS[k] || k) : (DEWEY_LABELS[k] || k));
+    const data       = sorted.map(([, v]) => v);
+    const baseColors = sorted.map(([k]) => {
+        const hundredKey = deweyLevel === 'centenas' ? k : (k === 'NC' ? 'NC' : String(Math.floor(parseInt(k, 10) / 10)));
+        return DEWEY_HUNDREDS_COLORS[hundredKey] || '#6b7280';
+    });
+    const bgColors = baseColors.map(c => c + '99');
+    const grandTotal = data.reduce((a, b) => a + b, 0);
+    document.getElementById('deweyInfoText').textContent =
+        deweyLevel === 'centenas'
+            ? 'Clasificación Dewey — agrupada por centenas (10 clases) · filtrada por categoría seleccionada'
+            : 'Clasificación Dewey — agrupada por decenas (100 divisiones) · filtrada por categoría seleccionada';
+
+    if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('chartDewey').getContext('2d');
+        charts['dewey'] = new Chart(ctx, {
+            type: 'bar',
+            data: { labels, datasets: [{ label: 'Registros', data, backgroundColor: bgColors, borderColor: baseColors, borderWidth: 1.5 }] },
+            options: {
+                indexAxis: 'y', responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    document.getElementById('tableDewey').innerHTML = buildTable(
+        ['Clase Dewey', 'Registros', '% del total'],
+        sorted.map(([k, v]) => [
+            deweyLevel === 'centenas' ? (DEWEY_HUNDREDS_LABELS[k] || k) : (DEWEY_LABELS[k] || k),
+            `<strong>${v}</strong>`,
+            `${((v/grandTotal)*100).toFixed(1)}%`
+        ])
+    );
+}
+
+function renderColeccionTab() {
+    destroyChart('colec');
+    if (!statsGlobal) return;
+    const validSet = new Set(statsGlobal.validDays);
+    const byColec  = {};
+
+    getFilteredRecords(selectedCat).forEach(r => {
+        if (!validSet.has(r.date)) return;
+        const col = r.coleccion || 'Sin colección';
+        byColec[col] = (byColec[col] || 0) + 1;
+    });
+
+    if (!Object.keys(byColec).length) { document.getElementById('tableColec').innerHTML = '<p class="text-sm text-gray-400 mt-2">Sin datos de colección para la categoría seleccionada.</p>'; return; }
+
+    const sorted     = Object.entries(byColec).sort((a, b) => b[1] - a[1]);
+    const labels     = sorted.map(([k]) => k);
+    const data       = sorted.map(([, v]) => v);
+    const grandTotal = data.reduce((a, b) => a + b, 0);
+
+    if (typeof Chart !== 'undefined') {
+        const ctx = document.getElementById('chartColec').getContext('2d');
+        charts['colec'] = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [{
+                    label: 'Registros',
+                    data,
+                    backgroundColor: labels.map((_, i) => CHART_PALETTE[i % CHART_PALETTE.length] + '99'),
+                    borderColor:     labels.map((_, i) => CHART_PALETTE[i % CHART_PALETTE.length]),
+                    borderWidth: 1.5
+                }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true,
+                plugins: { legend: { display: false } },
+                scales: { x: { beginAtZero: true, ticks: { precision: 0 } } }
+            }
+        });
+    }
+
+    document.getElementById('tableColec').innerHTML = buildTable(
+        ['Colección', 'Registros', '% del total'],
+        sorted.map(([k, v]) => [k, `<strong>${v}</strong>`, `${((v/grandTotal)*100).toFixed(1)}%`])
+    );
+}
+
+// ═══════════════════════════ TABLE HELPER ════════════════════════════
+function buildTable(headers, rows) {
+    const ths = headers.map(h => `<th class="text-left p-3 border-b border-gray-200 text-xs text-gray-500 uppercase font-semibold">${h}</th>`).join('');
+    const trs = rows.map(cells =>
+        `<tr class="border-b border-gray-100 hover:bg-gray-50">
+            ${cells.map(c => `<td class="p-3 text-sm">${c}</td>`).join('')}
+        </tr>`
+    ).join('');
+    return `<table class="w-full border-collapse"><thead><tr class="bg-gray-50">${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+}
+
+// ═══════════════════════════ UI CONTROLS ═════════════════════════════
+function setMode(mode) {
+    analysisMode = mode;
+    document.getElementById('mode-active').className = `flex-1 sm:flex-none px-5 py-2.5 transition ${mode==='active' ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`;
+    document.getElementById('mode-labor').className  = `flex-1 sm:flex-none px-5 py-2.5 transition ${mode==='labor'  ? 'bg-blue-600 text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`;
+    refreshCatStats();
+}
+
+function setCat(cat) {
+    selectedCat = cat;
+    document.querySelectorAll('.cat-pill').forEach(b => {
+        const active = b.dataset.cat === cat;
+        b.className = `cat-pill px-4 py-2 rounded-xl border text-sm font-medium transition ${active ? 'bg-blue-600 text-white border-blue-600' : 'border-gray-200 text-gray-600 hover:border-blue-300'}`;
+    });
+    refreshCatStats();       // stats cards + daily chart
+    renderMonthlyTab();      // por mes
+    renderDeweyTab();        // por dewey
+    renderColeccionTab();    // por colección
+}
+
+function switchRTab(tabId, btn) {
+    document.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    btn.classList.add('active');
+}
+
+// ═══════════════════════════ EXPORT ══════════════════════════════════
+function waitNextFrame() {
+    return new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
+function dataUrlToUint8Array(dataUrl) {
+    const base64 = dataUrl.split(',')[1] || '';
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+}
+
+function canvasToWhitePngBytes(canvas) {
+    const out = document.createElement('canvas');
+    out.width = canvas.width;
+    out.height = canvas.height;
+    const ctx = out.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, out.width, out.height);
+    ctx.drawImage(canvas, 0, 0);
+    return dataUrlToUint8Array(out.toDataURL('image/png'));
+}
+
+function setActiveResultTab(tabId) {
+    document.querySelectorAll('.rtab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
+    const panel = document.getElementById(tabId);
+    if (panel) panel.classList.add('active');
+    const btn = document.querySelector(`.rtab[onclick*="'${tabId}'"]`);
+    if (btn) btn.classList.add('active');
+}
+
+function resetExportModalDefaults() {
+    const ic = document.getElementById('exp-include-charts');
+    const it = document.getElementById('exp-include-tables');
+    const im = document.getElementById('exp-include-metricas');
+    if (ic) ic.checked = true;
+    if (it) it.checked = true;
+    if (im) im.checked = true;
+    document.querySelectorAll('.exp-cat').forEach(cb => { cb.checked = cb.value === 'nuevo'; });
+    document.querySelectorAll('.exp-chart').forEach(cb => { cb.checked = true; });
+}
+
+function setExportLoading(show, text) {
+    const ov = document.getElementById('exportLoadingOverlay');
+    const tx = document.getElementById('exportLoadingText');
+    if (tx && text !== undefined) tx.textContent = text || '';
+    if (!ov) return;
+    if (show) {
+        ov.classList.remove('hidden');
+        ov.classList.add('flex');
+    } else {
+        ov.classList.add('hidden');
+        ov.classList.remove('flex');
+    }
+}
+
+function abrirModalExportPNG() {
+    const m = document.getElementById('modalExportPng');
+    if (!m) return;
+    resetExportModalDefaults();
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+}
+
+function cerrarModalExportPNG() {
+    const m = document.getElementById('modalExportPng');
+    if (!m) return;
+    m.classList.add('hidden');
+    m.classList.remove('flex');
+}
+
+function marcarExportPng(mark) {
+    document.querySelectorAll('.exp-cat, .exp-chart').forEach(cb => { cb.checked = !!mark; });
+    const ic = document.getElementById('exp-include-charts');
+    const it = document.getElementById('exp-include-tables');
+    const im = document.getElementById('exp-include-metricas');
+    if (ic) ic.checked = !!mark;
+    if (it) it.checked = !!mark;
+    if (im) im.checked = !!mark;
+}
+
+function getExportTableSpec(tabId, cat) {
+    if (!statsGlobal) return null;
+    const validDays = statsGlobal.validDays || [];
+    const validSet = new Set(validDays);
+
+    /* Línea de tiempo: solo gráfica; no hay tabla exportable. */
+    if (tabId === 'rt-diario') return null;
+
+    if (tabId === 'rt-mes') {
+        const byMonth = {};
+        getFilteredRecords(cat).forEach(r => {
+            if (!validSet.has(r.date)) return;
+            const ym = r.date.substring(0, 7);
+            if (!byMonth[ym]) byMonth[ym] = { nuevo: 0, propio: 0, existente: 0 };
+            byMonth[ym][r.status]++;
+        });
+        const months = Object.keys(byMonth).sort();
+        if (!months.length) return { title: `Tabla - ${CAT_LABELS[cat]} - Por Mes`, headers: ['Sin datos'], rows: [['0']] };
+        const labels = months.map(m => { const [y, mo] = m.split('-'); return `${MESES_NOMBRES[+mo - 1]} ${y}`; });
+        if (cat === 'todos') {
+            return {
+                title: `Tabla - ${CAT_LABELS[cat]} - Por Mes`,
+                headers: ['Mes', 'Nuevos Bibl.', 'Ej. Propios', 'Ej. Existentes', 'Total'],
+                rows: months.map((m, i) => [labels[i], String(byMonth[m].nuevo), String(byMonth[m].propio), String(byMonth[m].existente), String(byMonth[m].nuevo + byMonth[m].propio + byMonth[m].existente)])
+            };
+        }
+        if (cat === 'anadidos') {
+            return {
+                title: `Tabla - ${CAT_LABELS[cat]} - Por Mes`,
+                headers: ['Mes', 'Ej. Propios', 'Ej. Existentes', 'Total'],
+                rows: months.map((m, i) => [labels[i], String(byMonth[m].propio), String(byMonth[m].existente), String(byMonth[m].propio + byMonth[m].existente)])
+            };
+        }
+        const key = cat;
+        return {
+            title: `Tabla - ${CAT_LABELS[cat]} - Por Mes`,
+            headers: ['Mes', CAT_LABELS[cat]],
+            rows: months.map((m, i) => [labels[i], String(byMonth[m][key] || 0)])
+        };
+    }
+
+    if (tabId === 'rt-dewey') {
+        const byDewey = {};
+        getFilteredRecords(cat).forEach(r => {
+            if (!validSet.has(r.date)) return;
+            const decena = extractDeweyClass(r.clasificacion);
+            const key = deweyLevel === 'centenas'
+                ? (decena === 'NC' ? 'NC' : String(Math.floor(parseInt(decena, 10) / 10)))
+                : decena;
+            byDewey[key] = (byDewey[key] || 0) + 1;
+        });
+        const entries = Object.entries(byDewey);
+        if (!entries.length) return { title: `Tabla - ${CAT_LABELS[cat]} - Por Dewey`, headers: ['Sin datos'], rows: [['0']] };
+        const sorted = deweySortMode === 'number'
+            ? entries.sort((a, b) => (a[0] === 'NC' ? 9999 : +a[0]) - (b[0] === 'NC' ? 9999 : +b[0]))
+            : entries.sort((a, b) => b[1] - a[1]);
+        const total = sorted.reduce((a, [,v]) => a + v, 0);
+        return {
+            title: `Tabla - ${CAT_LABELS[cat]} - Por Dewey`,
+            headers: ['Clase Dewey', 'Registros', '% del total'],
+            rows: sorted.map(([k, v]) => [
+                deweyLevel === 'centenas' ? (DEWEY_HUNDREDS_LABELS[k] || k) : (DEWEY_LABELS[k] || k),
+                String(v),
+                `${((v / total) * 100).toFixed(1)}%`
+            ])
+        };
+    }
+
+    if (tabId === 'rt-colec') {
+        const byColec = {};
+        getFilteredRecords(cat).forEach(r => {
+            if (!validSet.has(r.date)) return;
+            const c = r.coleccion || 'Sin colección';
+            byColec[c] = (byColec[c] || 0) + 1;
+        });
+        const sorted = Object.entries(byColec).sort((a, b) => b[1] - a[1]);
+        if (!sorted.length) return { title: `Tabla - ${CAT_LABELS[cat]} - Por Colección`, headers: ['Sin datos'], rows: [['0']] };
+        const total = sorted.reduce((a, [,v]) => a + v, 0);
+        return {
+            title: `Tabla - ${CAT_LABELS[cat]} - Por Colección`,
+            headers: ['Colección', 'Registros', '% del total'],
+            rows: sorted.map(([k, v]) => [k, String(v), `${((v / total) * 100).toFixed(1)}%`])
+        };
+    }
+
+    return null;
+}
+
+async function captureStatsBoardToPngBytes() {
+    if (typeof html2canvas === 'undefined') throw new Error('html2canvas no disponible');
+    const el = document.getElementById('statsCardsBoard');
+    if (!el) throw new Error('statsCardsBoard');
+
+    const canvas = await html2canvas(el, {
+        backgroundColor: '#f1f5f9',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        onclone: (clonedDoc) => {
+            const root = clonedDoc.getElementById('statsCardsBoard');
+            if (root) {
+                root.style.padding = '48px';
+                root.style.boxSizing = 'border-box';
+                root.style.overflow = 'visible';
+                root.style.background = '#f1f5f9';
+            }
+            clonedDoc.querySelectorAll('.metric-card').forEach(card => {
+                card.style.overflow = 'visible';
+            });
+            clonedDoc.querySelectorAll('.metric-card p, #statsCardsBoard p').forEach(p => {
+                p.style.overflow = 'visible';
+                p.style.textOverflow = 'clip';
+                p.style.whiteSpace = 'normal';
+                p.style.wordBreak = 'break-word';
+                p.style.lineHeight = '1.4';
+            });
+        }
+    });
+    return dataUrlToUint8Array(canvas.toDataURL('image/png'));
+}
+
+async function captureTableSpecToPngBytes(spec) {
+    if (typeof html2canvas === 'undefined') throw new Error('html2canvas no disponible');
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'fixed';
+    wrapper.style.left = '-10000px';
+    wrapper.style.top = '0';
+    wrapper.style.width = '1100px';
+    wrapper.style.background = '#ffffff';
+    wrapper.style.color = '#000000';
+    wrapper.style.padding = '20px';
+    wrapper.innerHTML = `
+        <div style="font: 700 20px Segoe UI, Arial, sans-serif; margin-bottom: 12px; color: #000;">${spec.title}</div>
+        <div>${buildTable(spec.headers, spec.rows)}</div>
+    `;
+    document.body.appendChild(wrapper);
+    wrapper.querySelectorAll('*').forEach(el => { el.style.color = '#000000'; });
+    const canvas = await html2canvas(wrapper, { backgroundColor: '#ffffff', scale: 2, useCORS: true });
+    wrapper.remove();
+    return dataUrlToUint8Array(canvas.toDataURL('image/png'));
+}
+
+const EXPORT_TAB_LABELS = {
+    'rt-diario': 'Línea de Tiempo',
+    'rt-mes': 'Por Mes',
+    'rt-dewey': 'Por Dewey',
+    'rt-colec': 'Por Colección'
+};
+
+async function exportarVisualizacionesPNGSeleccion() {
+    if (!statsGlobal || records.length === 0) {
+        alert('Genera el análisis primero.');
+        return;
+    }
+    if (typeof JSZip === 'undefined') {
+        alert('No se pudo cargar JSZip. Verifica tu conexión e inténtalo de nuevo.');
+        return;
+    }
+
+    const includeCharts = document.getElementById('exp-include-charts')?.checked ?? false;
+    const includeTables = document.getElementById('exp-include-tables')?.checked ?? false;
+    const includeMetricas = document.getElementById('exp-include-metricas')?.checked ?? false;
+
+    if (!includeCharts && !includeTables && !includeMetricas) {
+        alert('Marca al menos una opción: gráficas, tablas o resumen de métricas.');
+        return;
+    }
+
+    const needHtml2canvas = includeTables || includeMetricas;
+    if (needHtml2canvas && typeof html2canvas === 'undefined') {
+        alert('No se pudo cargar html2canvas. Verifica tu conexión e inténtalo de nuevo.');
+        return;
+    }
+
+    const selectedCategories = Array.from(document.querySelectorAll('.exp-cat:checked')).map(el => el.value);
+    const selectedTabs = Array.from(document.querySelectorAll('.exp-chart:checked')).map(el => el.value);
+
+    const needsChartTableLoop = includeCharts || includeTables;
+    if (needsChartTableLoop && (!selectedCategories.length || !selectedTabs.length)) {
+        alert('Selecciona al menos una categoría y una vista (Línea de tiempo, Por mes, etc.).');
+        return;
+    }
+    if (includeMetricas && !selectedCategories.length) {
+        alert('Selecciona al menos una categoría para el resumen de métricas.');
+        return;
+    }
+
+    cerrarModalExportPNG();
+    setExportLoading(true, 'Preparando exportación…');
+
+    const categoryNames = {
+        todos: 'todos',
+        nuevo: 'nuevos_bibliograficos',
+        propio: 'ejemplares_propios',
+        existente: 'ejemplares_existentes',
+        anadidos: 'total_ejemplares'
+    };
+    const catLabel = {
+        todos: 'Todos',
+        nuevo: 'Nuevos Bibliográficos',
+        propio: 'Ejemplares Propios',
+        existente: 'Ejemplares Existentes',
+        anadidos: 'Total de Ejemplares'
+    };
+    const allChartTargets = [
+        { tabId: 'rt-diario', canvasId: 'chartMain', name: 'linea_tiempo' },
+        { tabId: 'rt-mes', canvasId: 'chartMes', name: 'por_mes' },
+        { tabId: 'rt-dewey', canvasId: 'chartDewey', name: 'por_dewey' },
+        { tabId: 'rt-colec', canvasId: 'chartColec', name: 'por_coleccion' }
+    ];
+    const chartTargets = allChartTargets.filter(t => selectedTabs.includes(t.tabId));
+
+    const prevChartAnim = (typeof Chart !== 'undefined') ? Chart.defaults.animation : undefined;
+    const prevChartColor = (typeof Chart !== 'undefined') ? Chart.defaults.color : undefined;
+    const previousCat = selectedCat;
+    const previousMode = analysisMode;
+    const previousTab = document.querySelector('.rtab-panel.active')?.id || 'rt-diario';
+
+    let step = 0;
+    let totalSteps = 0;
+    selectedCategories.forEach(cat => {
+        if (includeMetricas) totalSteps += 1;
+        if (needsChartTableLoop) {
+            chartTargets.forEach(target => {
+                if (includeCharts) totalSteps += 1;
+                if (includeTables && target.tabId !== 'rt-diario') totalSteps += 1;
+            });
+        }
+    });
+    const pct = () => (totalSteps ? Math.round((100 * step) / totalSteps) : 0);
+
+    try {
+        const zip = new JSZip();
+        if (typeof Chart !== 'undefined' && includeCharts) {
+            Chart.defaults.animation = false;
+            Chart.defaults.color = '#000000';
+        } else if (typeof Chart !== 'undefined') {
+            Chart.defaults.animation = false;
+        }
+
+        for (const cat of selectedCategories) {
+            setCat(cat);
+            await waitNextFrame();
+            const catName = catLabel[cat] || cat;
+
+            if (includeMetricas) {
+                step++;
+                setExportLoading(true, `${pct()}% · ${catName} — capturando resumen de métricas…`);
+                refreshCatStats();
+                await waitNextFrame();
+                const pngMetricas = await captureStatsBoardToPngBytes();
+                zip.file(`${categoryNames[cat]}__metricas.png`, pngMetricas);
+            }
+
+            if (!needsChartTableLoop) continue;
+
+            for (const target of chartTargets) {
+                const vistaLbl = EXPORT_TAB_LABELS[target.tabId] || target.tabId;
+                setActiveResultTab(target.tabId);
+                await waitNextFrame();
+
+                if (target.canvasId === 'chartMain') refreshCatStats();
+                if (target.canvasId === 'chartMes') renderMonthlyTab();
+                if (target.canvasId === 'chartDewey') renderDeweyTab();
+                if (target.canvasId === 'chartColec') renderColeccionTab();
+                await waitNextFrame();
+
+                const base = categoryNames[cat];
+                const name = target.name;
+                const both = includeCharts && includeTables;
+
+                if (includeCharts) {
+                    step++;
+                    setExportLoading(true, `${pct()}% · ${catName} · ${vistaLbl} — gráfica…`);
+                    const canvas = document.getElementById(target.canvasId);
+                    if (canvas && typeof canvas.toDataURL === 'function') {
+                        const fnChart = both ? `${base}__${name}_grafica.png` : `${base}__${name}.png`;
+                        zip.file(fnChart, canvasToWhitePngBytes(canvas));
+                    }
+                }
+                if (includeTables && target.tabId !== 'rt-diario') {
+                    step++;
+                    setExportLoading(true, `${pct()}% · ${catName} · ${vistaLbl} — tabla…`);
+                    const spec = getExportTableSpec(target.tabId, cat);
+                    if (!spec) continue;
+                    const pngTable = await captureTableSpecToPngBytes(spec);
+                    const fnTable = both ? `${base}__${name}_tabla.png` : `${base}__${name}_tabla.png`;
+                    zip.file(fnTable, pngTable);
+                }
+            }
+        }
+
+        step = totalSteps;
+        setExportLoading(true, 'Comprimiendo ZIP…');
+        const blob = await zip.generateAsync(
+            { type: 'blob', compression: 'DEFLATE' },
+            meta => {
+                if (meta && meta.percent != null) {
+                    setExportLoading(true, `Generando archivo… ${Math.round(meta.percent)}%`);
+                }
+            }
+        );
+        saveAs(blob, 'Visualizaciones_Catalogacion_PNG.zip');
+        setExportLoading(true, 'Descarga lista.');
+        await new Promise(r => setTimeout(r, 500));
+    } catch (e) {
+        console.error(e);
+        alert('No se pudieron exportar las visualizaciones en PNG.');
+    } finally {
+        setExportLoading(false);
+        if (typeof Chart !== 'undefined') {
+            Chart.defaults.animation = prevChartAnim;
+            Chart.defaults.color = prevChartColor;
+        }
+        setMode(previousMode);
+        setCat(previousCat);
+        setActiveResultTab(previousTab);
+    }
+}
+
+function autoAnalyzeIfPreloadedInputs() {
+    const ta = document.getElementById('tablaA');
+    const tb = document.getElementById('tablaB');
+    if (!ta || !tb) return;
+    const rawA = (ta.value || '').trim();
+    const rawB = (tb.value || '').trim();
+    if (!rawA && !rawB) return;
+    if (window.__REPORT_DATA__) return; // Embedded report takes precedence.
+
+    const parsedA = parseTablaA(rawA);
+    const parsedB = parseTablaB(rawB);
+    const all = [...parsedA, ...parsedB];
+    if (!all.length) return;
+
+    const sortedDates = all.map(r => r.date).sort();
+    const minDate = sortedDates[0];
+    const maxDate = sortedDates[sortedDates.length - 1];
+    if (!minDate || !maxDate) return;
+
+    const s = new Date(minDate + 'T12:00:00');
+    const e = new Date(maxDate + 'T12:00:00');
+    if (isNaN(s.getTime()) || isNaN(e.getTime())) return;
+
+    initStep2FlatpickrPair(s, e);
+    setStep2PeriodoModo('manual', { skipAtajosToManualRestore: true });
+    buildCalGrid(s, e, { restoreDisabled: [], fromPersistence: false });
+    const calGrid = document.getElementById('calGrid');
+    if (calGrid) calGrid.classList.remove('hidden');
+
+    goStep(3);
+}
+
+function destroyModalFlatpickr() {
+    if (fpModalStart && typeof fpModalStart.destroy === 'function') { try { fpModalStart.destroy(); } catch (e) {} fpModalStart = null; }
+    if (fpModalEnd && typeof fpModalEnd.destroy === 'function') { try { fpModalEnd.destroy(); } catch (e) {} fpModalEnd = null; }
+}
+
+function handleAjustarPeriodoClick() {
+    if (isSnapshotReport()) abrirModalAjustarPeriodo();
+    else goStep(2);
+}
+
+/** Mes más reciente DENTRO del año dado, según los registros (formato 'MM' o ''). */
+function getMostRecentMonthForYear(y) {
+    if (!y) return '';
+    let bestMo = '';
+    for (let i = 0; i < records.length; i++) {
+        const d = (records[i] && records[i].date) ? String(records[i].date).trim() : '';
+        if (!d) continue;
+        const iso = d.length >= 10 ? d.slice(0, 10) : d;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
+        if (iso.slice(0, 4) !== y) continue;
+        const mo = iso.slice(5, 7);
+        if (mo > bestMo) bestMo = mo;
+    }
+    return bestMo;
+}
+
+function getMostRecentYearMonthFromRecords() {
+    let bestTs = -Infinity;
+    let bestIso = '';
+    for (let i = 0; i < records.length; i++) {
+        const d = (records[i] && records[i].date) ? String(records[i].date).trim() : '';
+        if (!d) continue;
+        const iso = d.length >= 10 ? d.slice(0, 10) : d;
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(iso)) continue;
+        const t = new Date(iso + 'T12:00:00').getTime();
+        if (!isNaN(t) && t > bestTs) {
+            bestTs = t;
+            bestIso = iso;
+        }
+    }
+    if (!bestIso) return { y: '', mo: '' };
+    return { y: bestIso.slice(0, 4), mo: bestIso.slice(5, 7) };
+}
+
+/** Construye la grilla para un año-mes concreto (paso 2 o modal); abarca el MES NATURAL COMPLETO,
+ *  sin recortar a min/max de los registros. Devuelve false solo si no hay registros en ese mes. */
+function applyQuickMonthForPrefix(prefix, y, mo) {
+    if (!y || !mo) return false;
+    const pref = `${y}-${mo}`;
+    const hasAnyRecord = records.some(function (r) {
+        return r && r.date && String(r.date).startsWith(pref);
+    });
+    if (!hasAnyRecord) return false;
+    const yi = parseInt(y, 10);
+    const mi = parseInt(mo, 10);
+    if (!yi || !mi || mi < 1 || mi > 12) return false;
+    /* Mes natural: día 1 al último día (28/29/30/31). Sin Math.min/max contra records. */
+    const s = new Date(yi, mi - 1, 1, 12, 0, 0, 0);
+    const lastDay = new Date(yi, mi, 0).getDate();
+    const e = new Date(yi, mi - 1, lastDay, 12, 0, 0, 0);
+    calContext = prefix === 'ma' ? 'modal' : 'step2';
+    buildCalGrid(s, e, { fromPersistence: false });
+    setPrefixFlatpickrRangeQuiet(prefix, s, e);
+    if (prefix === 's2') {
+        const calGrid = document.getElementById('calGrid');
+        if (calGrid) calGrid.classList.remove('hidden');
+    }
+    return true;
+}
+
+/** Tras pasar de rangos a «Por meses»: respeta año seleccionado por el usuario; subordina el mes a ese año. */
+function restoreAtajosFromLastOrDefault(prefix) {
+    const ySel0 = document.getElementById(prefix + '-quick-year');
+    const mSel0 = document.getElementById(prefix + '-quick-month');
+    /* Si el usuario ya eligió año, no se reescribe; solo subordinar mes y aplicar. */
+    if (ySel0 && ySel0.value) {
+        const yUser = ySel0.value;
+        fillQuickYearMonth(prefix, yUser);
+        const ySel = document.getElementById(prefix + '-quick-year');
+        const mSel = document.getElementById(prefix + '-quick-month');
+        if (!ySel || !mSel) return;
+        if (![...ySel.options].some(o => o.value === yUser)) return;
+        ySel.value = yUser;
+        repopulateQuickMonthSelect(prefix);
+        let moPick = mSel0 && mSel0.value;
+        if (!moPick || ![...mSel.options].some(o => o.value === moPick)) {
+            moPick = getMostRecentMonthForYear(yUser);
+        }
+        if (moPick && [...mSel.options].some(o => o.value === moPick)) {
+            mSel.value = moPick;
+            // #region agent log
+            fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:restoreAtajosFromLastOrDefault',message:'preserve_user_year',data:{prefix:prefix,y:yUser,mo:moPick},timestamp:Date.now(),hypothesisId:'year-anchor'})}).catch(function(){});
+            // #endregion
+            applyQuickMonthForPrefix(prefix, yUser, moPick);
+        }
+        return;
+    }
+    const pu = readPeriodoUiState(prefix);
+    const yTry = pu && (pu.lastAy || pu.y) ? (pu.lastAy || pu.y) : '';
+    const mTry = pu && (pu.lastAmo || pu.mo) ? (pu.lastAmo || pu.mo) : '';
+    fillQuickYearMonth(prefix, yTry || '');
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    if (!ySel || !mSel) return;
+    if (yTry && mTry) {
+        const hasY = [...ySel.options].some(o => o.value === yTry);
+        if (hasY) {
+            ySel.value = yTry;
+            repopulateQuickMonthSelect(prefix);
+            const hasM = [...mSel.options].some(o => o.value === mTry);
+            if (hasM && applyQuickMonthForPrefix(prefix, yTry, mTry)) return;
+        }
+    }
+    const { y, mo } = getMostRecentYearMonthFromRecords();
+    if (!y || !mo) return;
+    fillQuickYearMonth(prefix, y);
+    if (![...ySel.options].some(o => o.value === y)) return;
+    ySel.value = y;
+    repopulateQuickMonthSelect(prefix);
+    if (![...mSel.options].some(o => o.value === mo)) return;
+    mSel.value = mo;
+    applyQuickMonthForPrefix(prefix, y, mo);
+}
+
+function fillQuickYearMonth(prefix, preferredYear) {
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    if (!ySel || !mSel) return [];
+    const years = [...new Set(records.map(r => (r.date || '').slice(0, 4)).filter(Boolean))].sort((a, b) => b.localeCompare(a));
+    ySel.innerHTML = '<option value="">Año…</option>' + years.map(y => `<option value="${y}">${y}</option>`).join('');
+    mSel.innerHTML = '<option value="">Mes…</option>';
+    let yPick = '';
+    if (preferredYear && years.includes(preferredYear)) yPick = preferredYear;
+    else if (years.length) yPick = years[0];
+    if (yPick) {
+        ySel.value = yPick;
+        repopulateQuickMonthSelect(prefix);
+    }
+    return years;
+}
+
+/** Rellena el desplegable de mes según el año elegido (sin cambiar modo de periodo). */
+function repopulateQuickMonthSelect(prefix) {
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    if (!ySel || !mSel) return;
+    const y = ySel.value;
+    mSel.innerHTML = '<option value="">Mes…</option>';
+    if (!y) return;
+    const months = [...new Set(
+        records.map(r => r.date).filter(d => d && d.startsWith(y + '-')).map(d => d.slice(5, 7))
+    )].sort((a, b) => b.localeCompare(a));
+    months.forEach(mo => {
+        const mi = parseInt(mo, 10) - 1;
+        const opt = document.createElement('option');
+        opt.value = mo;
+        opt.textContent = (MESES_NOMBRES[mi] || mo) + ' ' + y;
+        mSel.appendChild(opt);
+    });
+}
+
+function onQuickYearSelectUser(prefix) {
+    repopulateQuickMonthSelect(prefix);
+    const ySel = document.getElementById(prefix + '-quick-year');
+    const mSel = document.getElementById(prefix + '-quick-month');
+    if (ySel && mSel && ySel.value) {
+        /* Mes subordinado al año recién elegido: pick automático del más reciente DENTRO de ese año. */
+        const moInYear = getMostRecentMonthForYear(ySel.value);
+        if (moInYear && [...mSel.options].some(function (o) { return o.value === moInYear; })) {
+            mSel.value = moInYear;
+            noteLastSelectedYearMonth(prefix, ySel.value, moInYear);
+            // #region agent log
+            fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:onQuickYearSelectUser',message:'auto_month_in_user_year',data:{prefix:prefix,y:ySel.value,mo:moInYear},timestamp:Date.now(),hypothesisId:'year-anchor'})}).catch(function(){});
+            // #endregion
+            applyQuickMonthForPrefix(prefix, ySel.value, moInYear);
+            runAnalysis();
+        }
+    }
+    setPeriodoModo(prefix, 'atajos');
+}
+
+function onQuickMonthApply(prefix) {
+    const y = document.getElementById(prefix + '-quick-year')?.value;
+    const mo = document.getElementById(prefix + '-quick-month')?.value;
+    if (!applyQuickMonthForPrefix(prefix, y, mo)) {
+        if (y && mo) alert('No hay registros en ese mes.');
+        return;
+    }
+    if (y && mo) noteLastSelectedYearMonth(prefix, y, mo);
+    setPeriodoModo(prefix, 'atajos');
+}
+
+function refreshPeriodoModeUi(prefix) {
+    const base = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 rounded-xl border-2 p-3 transition-all duration-150 cursor-pointer';
+    const rowM = document.getElementById(prefix + '-row-manual');
+    const rowA = document.getElementById(prefix + '-row-atajos');
+    if (!rowM || !rowA) return;
+    const manual = periodoModoGet(prefix) === 'manual';
+    const active = ' opacity-100 border-blue-300';
+    const dim = ' opacity-60 border-gray-200';
+    rowM.className = base + (manual ? active : dim);
+    rowA.className = base + (manual ? dim : active);
+}
+
+function setPeriodoModo(prefix, modo, opts) {
+    opts = opts || {};
+    const prev = periodoModoGet(prefix);
+    periodoModoSet(prefix, modo);
+    const manual = modo === 'manual';
+    if (!opts.uiOnly) {
+        if (manual && prev === 'atajos' && !opts.skipAtajosToManualRestore) {
+            if (prefix === 's2') restoreStep2ManualFromStorageOrGrid();
+            else if (prefix === 'ma') restoreModalManualFromGrid();
+        }
+        if (!manual && prev === 'manual') {
+            restoreAtajosFromLastOrDefault(prefix);
+        }
+    }
+    savePeriodoUiState(prefix);
+    refreshPeriodoModeUi(prefix);
+}
+
+/** Zona completa (contenedor): pointerdown en capture; la fila actúa como «Aplicar» inmediato para esa selección. */
+function installPeriodoModeFocusHandlers() {
+    const useCapture = true;
+    ['s2', 'ma'].forEach(function (prefix) {
+        const rowM = document.getElementById(prefix + '-row-manual');
+        const rowA = document.getElementById(prefix + '-row-atajos');
+
+        if (rowM && !rowM._periodoZonePointerBound) {
+            rowM._periodoZonePointerBound = true;
+            function toManual() {
+                setPeriodoModo(prefix, 'manual', { uiOnly: true, skipAtajosToManualRestore: true });
+                const r = syncManualDatePickersOnZoneActivate(prefix);
+                if (!r) return;
+                calContext = prefix === 'ma' ? 'modal' : 'step2';
+                buildCalGrid(r.s, r.e, { fromPersistence: false });
+                noteLastManualRangeForPrefix(prefix, r.s, r.e);
+                runAnalysis();
+                if (prefix === 's2') {
+                    const calGrid = document.getElementById('calGrid');
+                    if (calGrid) calGrid.classList.remove('hidden');
+                }
+            }
+            rowM.addEventListener('pointerdown', toManual, { capture: useCapture });
+        }
+        if (rowA && !rowA._periodoZonePointerBound) {
+            rowA._periodoZonePointerBound = true;
+            function toAtajos() {
+                const ySel = document.getElementById(prefix + '-quick-year');
+                const mSel = document.getElementById(prefix + '-quick-month');
+                const yPre = ySel && ySel.value;
+                const moPre = mSel && mSel.value;
+                /* Año fijado por el usuario: ese año manda; mes subordinado a ese año. */
+                if (yPre) {
+                    if (!moPre) {
+                        const moInYear = getMostRecentMonthForYear(yPre);
+                        if (moInYear && [...mSel.options].some(function (o) { return o.value === moInYear; })) {
+                            mSel.value = moInYear;
+                        }
+                    }
+                } else {
+                    /* Solo si AMBOS dropdowns están vacíos: restaurar memoria/sesión o aplicar default global. */
+                    syncMonthSelectsFromLastSelection(prefix);
+                    fillQuickMonthSelectsDefaultFromRecordsQuiet(prefix);
+                }
+                setPeriodoModo(prefix, 'atajos', { uiOnly: true });
+                const y = ySel && ySel.value;
+                const mo = mSel && mSel.value;
+                // #region agent log
+                fetch('http://127.0.0.1:7866/ingest/143e6973-d5ff-4ff7-a09a-b3fc313b5694',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c955a0'},body:JSON.stringify({sessionId:'c955a0',location:'index_v2.html:toAtajos',message:'final_year_month',data:{prefix:prefix,yPre:yPre,moPre:moPre,y:y,mo:mo},timestamp:Date.now(),hypothesisId:'year-anchor'})}).catch(function(){});
+                // #endregion
+                if (y && mo) {
+                    if (!applyQuickMonthForPrefix(prefix, y, mo)) {
+                        alert('No hay registros en ese mes.');
+                    } else {
+                        noteLastSelectedYearMonth(prefix, y, mo);
+                        runAnalysis();
+                    }
+                } else if (!yPre) {
+                    restoreAtajosFromLastOrDefault(prefix);
+                    runAnalysis();
+                }
+                savePeriodoUiState(prefix);
+            }
+            rowA.addEventListener('pointerdown', toAtajos, { capture: useCapture });
+        }
+    });
+}
+
+function setModalPeriodoModo(modo, opts) { setPeriodoModo('ma', modo, opts); }
+function setStep2PeriodoModo(modo, opts) { setPeriodoModo('s2', modo, opts); }
+
+function abrirModalAjustarPeriodo() {
+    if (!exportedCalState) {
+        alert('No hay datos de calendario para ajustar. Vuelve a exportar la visión desde index_v2 con la versión actual.');
+        return;
+    }
+    const m = document.getElementById('modalAjustarPeriodo');
+    if (!m) return;
+    const sorted = [...exportedCalState.allWeekdays].sort();
+    if (!sorted.length) {
+        alert('No hay días laborables en el periodo exportado.');
+        return;
+    }
+    const s = new Date(sorted[0] + 'T12:00:00');
+    const e = new Date(sorted[sorted.length - 1] + 'T12:00:00');
+    maModalExportedPeriod = { startIso: sorted[0], endIso: sorted[sorted.length - 1] };
+    calContext = 'modal';
+    const dd = exportedCalState.disabledDays;
+    const hasV2Cal = window.__REPORT_DATA__ && (window.__REPORT_DATA__.v === 2 || (Array.isArray(window.__REPORT_DATA__.allWeekdays) && window.__REPORT_DATA__.allWeekdays.length));
+    if (hasV2Cal && Array.isArray(dd)) {
+        buildCalGrid(s, e, { fromPersistence: true, restoreDisabled: [...dd] });
+    } else {
+        buildCalGrid(s, e, { fromPersistence: false });
+    }
+    const preferredY = sorted.length ? sorted[sorted.length - 1].slice(0, 4) : '';
+    fillQuickYearMonth('ma', preferredY);
+    initModalFlatpickrPair(s, e);
+    restorePeriodoUiAfterInit('ma');
+    hydrateLastSelectedMonthFromSession('ma');
+    installPeriodoModeFocusHandlers();
+    m.classList.remove('hidden');
+    m.classList.add('flex');
+    m.setAttribute('aria-hidden', 'false');
+}
+
+function cerrarModalAjustarPeriodo(isCancel) {
+    const m = document.getElementById('modalAjustarPeriodo');
+    if (m) {
+        m.classList.add('hidden');
+        m.classList.remove('flex');
+        m.setAttribute('aria-hidden', 'true');
+    }
+    destroyModalFlatpickr();
+    lastManualRangeState.ma = { startIso: '', endIso: '' };
+    maModalExportedPeriod = null;
+    calContext = 'step2';
+}
+
+function aplicarModalAjustarPeriodo() {
+    statsGlobal = {
+        totalLabor: allWeekdays.filter(d => !disabledDays.has(d)).length,
+        validDays: allWeekdays.filter(d => !disabledDays.has(d))
+    };
+    if (exportedCalState) {
+        exportedCalState = {
+            allWeekdays: [...allWeekdays],
+            disabledDays: [...disabledDays]
+        };
+    }
+    runAnalysis();
+    cerrarModalAjustarPeriodo(false);
+}
+
+function applyReportSnapshot(data) {
+    if (!data || !Array.isArray(data.records) || !Array.isArray(data.validDays)) return;
+    document.documentElement.classList.add('snapshot-report');
+    records = data.records.map(r => ({
+        date: r.date,
+        status: r.status,
+        coleccion: r.coleccion || 'Sin colección',
+        clasificacion: r.clasificacion || ''
+    }));
+    invalidateQuickMonthMemoryIfRecordsChanged();
+    statsGlobal = { totalLabor: data.validDays.length, validDays: [...data.validDays] };
+    const hasV2 = data.v === 2 || (Array.isArray(data.allWeekdays) && data.allWeekdays.length);
+    if (hasV2 && Array.isArray(data.allWeekdays) && data.allWeekdays.length) {
+        exportedCalState = {
+            allWeekdays: [...data.allWeekdays],
+            disabledDays: Array.isArray(data.disabledDays) ? [...data.disabledDays] : []
+        };
+    } else {
+        exportedCalState = {
+            allWeekdays: inferAllWeekdaysFromValidDays(data.validDays),
+            disabledDays: []
+        };
+    }
+    analysisMode = data.analysisMode === 'labor' ? 'labor' : 'active';
+    selectedCat = data.selectedCat && Object.prototype.hasOwnProperty.call(CAT_LABELS, data.selectedCat) ? data.selectedCat : 'todos';
+    deweySortMode = data.deweySortMode === 'number' ? 'number' : 'count';
+    deweyLevel = data.deweyLevel === 'centenas' ? 'centenas' : 'decenas';
+
+    document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+    const s3 = document.getElementById('step-3');
+    if (s3) s3.classList.add('active');
+    currentStep = 3;
+    unlockedSteps = new Set([1, 2, 3]);
+
+    setMode(analysisMode);
+    setCat(selectedCat);
+    toggleDeweyLevel(deweyLevel);
+    toggleDeweySort(deweySortMode);
+    var generatedWhen = data.generatedAt || data.exportedAt || null;
+    if (!generatedWhen && document.lastModified) {
+        generatedWhen = new Date(document.lastModified).toISOString();
+    }
+    updateReportGeneratedBadge(generatedWhen);
+}
+
+function construirHeadHtmlExportacion() {
+    const chunks = [];
+    document.querySelectorAll('head > meta, head > title').forEach(el => {
+        if (el.tagName === 'TITLE') {
+            chunks.push('<title>Estadísticas de Catalogación — Visión publicada</title>');
+        } else {
+            chunks.push(el.outerHTML);
+        }
+    });
+    document.querySelectorAll('head > link[rel="stylesheet"]').forEach(el => chunks.push(el.outerHTML));
+    document.querySelectorAll('head > script[src]').forEach(el => chunks.push(el.outerHTML));
+    document.querySelectorAll('head > style').forEach(el => chunks.push(el.outerHTML));
+    return chunks.join('\n');
+}
+
+function descargarVisionResultadosHTML() {
+    if (!statsGlobal || !Array.isArray(statsGlobal.validDays) || statsGlobal.validDays.length === 0 || !records.length) {
+        alert('Genera el análisis primero (datos y calendario) antes de exportar la visión HTML.');
+        return;
+    }
+    const awSrc = (allWeekdays && allWeekdays.length) ? [...allWeekdays] : (exportedCalState && exportedCalState.allWeekdays.length ? [...exportedCalState.allWeekdays] : []);
+    if (!awSrc.length) {
+        alert('No hay rango de días laborables para exportar. Abre el calendario en el paso 2 o ajusta periodo en la visión.');
+        return;
+    }
+    const ddSrc = (disabledDays && disabledDays.size) ? [...disabledDays] : (exportedCalState && Array.isArray(exportedCalState.disabledDays) ? [...exportedCalState.disabledDays] : []);
+    const appScriptEl = document.getElementById('catalogacion-app');
+    if (!appScriptEl || !appScriptEl.textContent) {
+        alert('No se encontró el script principal (id catalogacion-app).');
+        return;
+    }
+    const bounds = getDataDateBounds();
+    const payload = {
+        v: 2,
+        records: records.map(r => ({
+            date: r.date,
+            status: r.status,
+            coleccion: r.coleccion,
+            clasificacion: r.clasificacion
+        })),
+        validDays: [...statsGlobal.validDays],
+        allWeekdays: awSrc,
+        disabledDays: ddSrc,
+        dataDateMin: bounds.min,
+        dataDateMax: bounds.max,
+        analysisMode,
+        selectedCat,
+        deweySortMode,
+        deweyLevel,
+        generatedAt: new Date().toISOString()
+    };
+    const jsonLiteral = JSON.stringify(payload).replace(/</g, '\\u003c');
+    const headerEl = document.querySelector('header');
+    const step3El = document.getElementById('step-3');
+    const modalEl = document.getElementById('modalExportPng');
+    const modalPeriodoEl = document.getElementById('modalAjustarPeriodo');
+    const overlayEl = document.getElementById('exportLoadingOverlay');
+    if (!headerEl || !step3El) {
+        alert('No se pudo leer la estructura de la página para exportar.');
+        return;
+    }
+    const headInner = construirHeadHtmlExportacion();
+    const bodyParts = [
+        headerEl.outerHTML,
+        '<main class="max-w-6xl mx-auto px-6 py-8 space-y-6">',
+        step3El.outerHTML,
+        '</main>'
+    ];
+    if (modalPeriodoEl) bodyParts.push(modalPeriodoEl.outerHTML);
+    if (modalEl) bodyParts.push(modalEl.outerHTML);
+    if (overlayEl) bodyParts.push(overlayEl.outerHTML);
+    const scriptOpen = '<' + 'script' + '>';
+    const scriptClose = '<' + '/' + 'script' + '>';
+    const scriptAppOpen = '<' + 'script id="catalogacion-app">';
+    const htmlOut = '<!DOCTYPE html>\n<html lang="es" class="snapshot-report">\n<head>\n' + headInner +
+        '\n</head>\n<body class="bg-slate-100 min-h-screen">\n' +
+        bodyParts.join('\n') + '\n' +
+        scriptOpen + 'window.__REPORT_DATA__=' + jsonLiteral + ';' + scriptClose + '\n' +
+        scriptAppOpen + appScriptEl.textContent + scriptClose + '\n' +
+        '</body>\n</html>';
+    const blob = new Blob([htmlOut], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'Estadisticas_Catalogacion_resultados.html';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+        URL.revokeObjectURL(a.href);
+        a.remove();
+    }, 2500);
+}
+
+if (window.__REPORT_DATA__) {
+    applyReportSnapshot(window.__REPORT_DATA__);
+} else {
+    autoAnalyzeIfPreloadedInputs();
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Herramientas de Servicios Técnicos</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Fraunces:opsz,wght@9..144,600;9..144,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #f3f4f6;
+            --bg-accent: #eceef1;
+            --surface: #ffffff;
+            --text: #0f172a;
+            --muted: #64748b;
+            --muted-soft: #94a3b8;
+            --border: rgba(15, 23, 42, 0.08);
+            --border-strong: rgba(15, 23, 42, 0.14);
+            --shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 6px 18px rgba(15, 23, 42, 0.05);
+            --shadow-hover: 0 4px 10px rgba(15, 23, 42, 0.06), 0 16px 34px rgba(15, 23, 42, 0.09);
+            --radius: 16px;
+            --c1: #1d4ed8;
+            --c2: #6d28d9;
+            --c3: #0e7490;
+            --c4: #047857;
+            --c5: #b45309;
+            --c6: #be123c;
+        }
+
+        * { box-sizing: border-box; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: "DM Sans", "Segoe UI", system-ui, sans-serif;
+            color: var(--text);
+            line-height: 1.55;
+            background: linear-gradient(180deg, #f7f8fa 0%, var(--bg-accent) 240px, var(--bg) 100%);
+        }
+
+        .page {
+            max-width: 960px;
+            margin: 0 auto;
+            padding: 48px 20px 64px;
+        }
+
+        /* ---------- Hero ---------- */
+        .hero {
+            text-align: center;
+            margin-bottom: 32px;
+            animation: fadeUp 0.6s ease both;
+        }
+
+        h1 {
+            margin: 0 0 12px;
+            font-family: "Fraunces", Georgia, serif;
+            font-size: clamp(1.85rem, 4vw, 2.6rem);
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.15;
+            color: var(--text);
+        }
+
+        .lead {
+            max-width: 520px;
+            margin: 0 auto;
+            font-size: 1.01rem;
+            color: var(--muted);
+        }
+
+        /* ---------- Lista vertical ---------- */
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .app-card {
+            --accent: var(--c1);
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            transition: box-shadow 0.22s ease, border-color 0.22s ease;
+            animation: fadeUp 0.5s ease both;
+        }
+
+        .app-card:nth-child(1) { --accent: var(--c1); animation-delay: 0.04s; }
+        .app-card:nth-child(2) { --accent: var(--c2); animation-delay: 0.08s; }
+        .app-card:nth-child(3) { --accent: var(--c3); animation-delay: 0.12s; }
+        .app-card:nth-child(4) { --accent: var(--c4); animation-delay: 0.16s; }
+        .app-card:nth-child(5) { --accent: var(--c5); animation-delay: 0.20s; }
+        .app-card:nth-child(6) { --accent: var(--c6); animation-delay: 0.24s; }
+
+        .app-card:hover {
+            border-color: color-mix(in srgb, var(--accent) 28%, transparent);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .app-accent {
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 55%, white));
+            z-index: 1;
+        }
+
+        /* cabecera: logo + textos + botón de abrir */
+        .app-head {
+            display: flex;
+            align-items: center;
+            gap: 26px;
+            padding: 26px 26px 26px 30px;
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 22px;
+            background: color-mix(in srgb, var(--accent) 11%, white);
+            color: var(--accent);
+            font-size: 3rem;
+            line-height: 1;
+            overflow: hidden;
+        }
+
+        .app-icon--logo {
+            padding: 8px;
+            background: #0f172a;
+            border: 1px solid color-mix(in srgb, var(--accent) 22%, transparent);
+        }
+
+        .app-icon--logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
+            border-radius: 15px;
+        }
+
+        .app-icon--logo-light {
+            background: #f8f4f5;
+            border: 1px solid rgba(128, 0, 25, 0.18);
+        }
+
+        .app-texts { flex: 1; min-width: 0; }
+
+        .app-title {
+            margin: 0 0 6px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+            color: var(--text);
+        }
+
+        .app-desc {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--muted);
+            line-height: 1.55;
+        }
+
+        .app-desc code {
+            padding: 1px 5px;
+            border-radius: 5px;
+            background: rgba(15, 23, 42, 0.06);
+            font-size: 0.86em;
+            color: var(--text);
+        }
+
+        /* botón circular para ABRIR la aplicación (flecha ↗) */
+        .app-launch {
+            flex-shrink: 0;
+            align-self: center;
+            width: 48px;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            color: #fff;
+            text-decoration: none;
+            background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 78%, #000));
+            box-shadow: 0 6px 16px color-mix(in srgb, var(--accent) 30%, transparent);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        }
+
+        .app-launch:hover {
+            filter: brightness(1.06);
+            transform: translateY(-2px) scale(1.04);
+            box-shadow: 0 10px 22px color-mix(in srgb, var(--accent) 38%, transparent);
+        }
+
+        .app-launch:active { transform: translateY(0) scale(1); }
+        .app-launch svg { width: 21px; height: 21px; }
+
+        .app-launch:focus-visible {
+            outline: 2px solid var(--accent);
+            outline-offset: 3px;
+        }
+
+        /* ---------- Descargar MRC ---------- */
+        .download {
+            margin-top: 32px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 18px 20px;
+            border-radius: var(--radius);
+            background: rgba(255, 255, 255, 0.72);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(6px);
+            animation: fadeUp 0.6s ease 0.3s both;
+        }
+
+        .download-text {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            max-width: 60ch;
+        }
+
+        .download-text strong { font-size: 0.96rem; color: var(--text); }
+        .download-text span { font-size: 0.86rem; color: var(--muted); line-height: 1.5; }
+
+        .download-text code {
+            padding: 1px 6px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.06);
+            font-size: 0.82em;
+            color: var(--text);
+        }
+
+        .download-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 9px;
+            padding: 11px 18px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 0.92rem;
+            font-weight: 600;
+            color: #fff;
+            background: linear-gradient(135deg, var(--c1), color-mix(in srgb, var(--c1) 78%, #000));
+            box-shadow: 0 6px 16px color-mix(in srgb, var(--c1) 28%, transparent);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, filter 0.18s ease;
+        }
+
+        .download-btn:hover {
+            filter: brightness(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 22px color-mix(in srgb, var(--c1) 34%, transparent);
+        }
+
+        .download-btn:active { transform: translateY(0); }
+        .download-btn svg { width: 18px; height: 18px; }
+
+        .download-btn:focus-visible {
+            outline: 2px solid var(--c1);
+            outline-offset: 3px;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="page">
+        <header class="hero">
+            <h1>Herramientas de Servicios Técnicos</h1>
+            <p class="lead">Seis aplicaciones que se ejecutan en el navegador, sin instalar nada.</p>
+        </header>
+
+        <main class="list" aria-label="Aplicaciones disponibles">
+
+            <!-- 1. Módulo de Catalogación -->
+            <article class="app-card">
+                <span class="app-accent" aria-hidden="true"></span>
+                <div class="app-head">
+                    <span class="app-icon app-icon--logo" data-fallback="📚" aria-hidden="true">
+                        <img src="Módulo de Catalogación/logo-marc.png" alt="" width="104" height="104" loading="lazy" decoding="async">
+                    </span>
+                    <div class="app-texts">
+                        <h3 class="app-title">Módulo de Catalogación</h3>
+                        <p class="app-desc">Módulo de catalogación en formato MARC21 (el estándar internacional para describir materiales bibliográficos) para agilizar la captura y edición de registros. Funciona como aplicación web autónoma en el navegador: importa y exporta archivos <code>.mrc</code> y <code>.dat</code>, marca en rojo y verde las correcciones propuestas (que el catalogador confirma antes de aplicarlas) y ofrece interfaz en español e inglés. Guarda las preferencias del usuario (idioma y tema) en el navegador y mantiene la sesión abierta mientras se trabaja.</p>
+                    </div>
+                    <a class="app-launch" href="Módulo de Catalogación/index.html" aria-label="Abrir Módulo de Catalogación">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"></path><polyline points="8 7 17 7 17 16"></polyline></svg>
+                    </a>
+                </div>
+            </article>
+
+            <!-- 2. Metabuscador y Generador de Informes -->
+            <article class="app-card">
+                <span class="app-accent" aria-hidden="true"></span>
+                <div class="app-head">
+                    <span class="app-icon app-icon--logo" data-fallback="🔍" aria-hidden="true">
+                        <img src="Metabuscador y Generador de Informes/logo-metabuscador-mrc.png" alt="" width="104" height="104" loading="lazy" decoding="async">
+                    </span>
+                    <div class="app-texts">
+                        <h3 class="app-title">Metabuscador y Generador de Informes</h3>
+                        <p class="app-desc">Plataforma de consulta y análisis sobre volcados MARC (los archivos binarios con el contenido del catálogo), que trabaja dentro del navegador sin enviar datos a ningún servidor. Indexa los metadatos en la computadora del usuario para acelerar las búsquedas y ofrece búsqueda booleana (AND/OR/NOT), búsqueda rápida por título, autor, editorial, ISBN, signatura y código de barras, gráficas enlazadas a los resultados, auditoría del campo 001 (para revisar la integridad de los identificadores antes de una migración), exportación a CSV y <code>.mrc</code>, e informes en HTML autocontenido.</p>
+                    </div>
+                    <a class="app-launch" href="Metabuscador y Generador de Informes/index.html" aria-label="Abrir Metabuscador y Generador de Informes">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"></path><polyline points="8 7 17 7 17 16"></polyline></svg>
+                    </a>
+                </div>
+            </article>
+
+            <!-- 3. Herramienta de Parseo Rápido de Títulos -->
+            <article class="app-card">
+                <span class="app-accent" aria-hidden="true"></span>
+                <div class="app-head">
+                    <span class="app-icon app-icon--logo" data-fallback="📋" aria-hidden="true">
+                        <img src="Herramienta de Parseo Rápido de Títulos/logo-parseo-mrc.png" alt="" width="104" height="104" loading="lazy" decoding="async">
+                    </span>
+                    <div class="app-texts">
+                        <h3 class="app-title">Herramienta de Parseo Rápido de Títulos</h3>
+                        <p class="app-desc">Herramienta de cotejo bibliográfico que cruza listas externas contra el catálogo cargado para encontrar coincidencias. El catálogo de referencia se carga desde TSV, Excel, exportaciones de SirsiDynix Symphony o archivos <code>.mrc</code>, y la lista a comparar se pega desde Excel. Mide el parecido entre títulos combinando distancia de edición (Levenshtein), coincidencia de palabras (Jaccard) y detección de subcadenas, con un umbral ajustable, y muestra cada candidato con un semáforo de color según el nivel de coincidencia.</p>
+                    </div>
+                    <a class="app-launch" href="Herramienta de Parseo Rápido de Títulos/index.html" aria-label="Abrir Herramienta de Parseo Rápido de Títulos">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"></path><polyline points="8 7 17 7 17 16"></polyline></svg>
+                    </a>
+                </div>
+            </article>
+
+            <!-- 4. Módulo HTML para Impresión de Códigos de Barra -->
+            <article class="app-card">
+                <span class="app-accent" aria-hidden="true"></span>
+                <div class="app-head">
+                    <span class="app-icon app-icon--logo" data-fallback="▥" aria-hidden="true">
+                        <img src="Módulo HTML para Impresión de Códigos de Barra/logo-barcodes-mrc.png" alt="" width="104" height="104" loading="lazy" decoding="async">
+                    </span>
+                    <div class="app-texts">
+                        <h3 class="app-title">Módulo HTML para Impresión de Códigos de Barra</h3>
+                        <p class="app-desc">Generador de etiquetas de código de barras en JavaScript, que funciona dentro del navegador sin instalar nada. Es compatible con el formato OL385 (60 etiquetas por hoja), pagina hasta 50,000 hojas y dibuja los códigos con la librería JsBarcode en formato CODE128. Incluye numeración secuencial con dígito verificador y ajustes de tamaño e impresión por rango de hojas.</p>
+                    </div>
+                    <a class="app-launch" href="Módulo HTML para Impresión de Códigos de Barra/index.html" aria-label="Abrir Módulo HTML para Impresión de Códigos de Barra">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"></path><polyline points="8 7 17 7 17 16"></polyline></svg>
+                    </a>
+                </div>
+            </article>
+
+            <!-- 5. Generador de Lomos y Hojas de Entrega -->
+            <article class="app-card">
+                <span class="app-accent" aria-hidden="true"></span>
+                <div class="app-head">
+                    <span class="app-icon app-icon--logo" data-fallback="📖" aria-hidden="true">
+                        <img src="Generador de Lomos y Hojas de Entrega/logo-lomos-mrc.png" alt="" width="104" height="104" loading="lazy" decoding="async">
+                    </span>
+                    <div class="app-texts">
+                        <h3 class="app-title">Generador de Lomos y Hojas de Entrega</h3>
+                        <p class="app-desc">Aplicación de producción en serie para la documentación y el procesamiento físico de los recursos. Importa el catálogo (MARC binario, TSV, Excel o TXT de SirsiDynix Symphony), captura los ítems con lector de código de barras (entrada por teclado y Enter, compatible con lectores tipo <em>keyboard wedge</em>), arma los lomos tipográficos, avisa cuando el texto no cabe en el lomo y genera las hojas de entrega en Excel con metadatos por rangos Dewey. El catálogo (miles de códigos de barras) se guarda con IndexedDB y las etiquetas y formatos de trabajo se conservan en el navegador.</p>
+                    </div>
+                    <a class="app-launch" href="Generador de Lomos y Hojas de Entrega/index.html" aria-label="Abrir Generador de Lomos y Hojas de Entrega">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"></path><polyline points="8 7 17 7 17 16"></polyline></svg>
+                    </a>
+                </div>
+            </article>
+
+            <!-- 6. Dashboard de Estadísticas de Catalogación -->
+            <article class="app-card">
+                <span class="app-accent" aria-hidden="true"></span>
+                <div class="app-head">
+                    <span class="app-icon app-icon--logo app-icon--logo-light" data-fallback="📊" aria-hidden="true">
+                        <img src="Dashboard de Estadísticas de Catalogación/logo-estadisticas-mrc.png" alt="" width="104" height="104" loading="lazy" decoding="async">
+                    </span>
+                    <div class="app-texts">
+                        <h3 class="app-title">Dashboard de Estadísticas de Catalogación</h3>
+                        <p class="app-desc">Tablero que reúne los indicadores de productividad y los recalcula a partir de los datos cargados (desde Excel, CSV o pegados de una hoja de cálculo). Genera gráficas con la librería Chart.js, desglosa por clasificación Dewey, colección y mes, exporta las gráficas como imágenes (PNG en un archivo ZIP) y produce una versión en HTML autocontenido para compartir los resultados sin depender de la herramienta.</p>
+                    </div>
+                    <a class="app-launch" href="Dashboard de Estadísticas de Catalogación/index.html" aria-label="Abrir Dashboard de Estadísticas de Catalogación">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17L17 7"></path><polyline points="8 7 17 7 17 16"></polyline></svg>
+                    </a>
+                </div>
+            </article>
+
+        </main>
+
+        <section class="download" aria-label="Archivo de prueba">
+            <div class="download-text">
+                <strong>¿Quieres probar las herramientas?</strong>
+                <span>Descarga este archivo <code>.mrc</code> de ejemplo y cárgalo en cualquiera de las aplicaciones que aceptan registros MARC para ver cómo funcionan con datos reales.</span>
+            </div>
+            <a class="download-btn" href="https://sagrado-my.sharepoint.com/:u:/g/personal/rcatala_sagrado_edu/IQAEnd4qG3rNQ4Wgxdu0qPClAUsdSFCm4Lwsk4qF-avSmIM?e=GGMCGm" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"></path><polyline points="7 10 12 15 17 10"></polyline><path d="M5 21h14"></path></svg>
+                Descargar MRC
+            </a>
+        </section>
+    </div>
+
+    <script>
+    (function () {
+        // fallback de logos
+        document.querySelectorAll('.app-icon--logo img').forEach(function (img) {
+            img.addEventListener('error', function () {
+                var box = img.parentElement;
+                if (!box) return;
+                box.classList.remove('app-icon--logo', 'app-icon--logo-light');
+                box.textContent = box.getAttribute('data-fallback') || '•';
+            });
+        });
+    })();
+    </script>
+</body>
+</html>

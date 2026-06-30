@@ -1,0 +1,3078 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapeo por Títulos</title>
+    <link rel="icon" href="favicon-parseo-mrc.png" type="image/png" sizes="32x32">
+    <link rel="apple-touch-icon" href="logo-parseo-mrc.png">
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-body: #f8fafc;
+            --bg-surface: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .controles {
+            background: var(--bg-surface);
+            padding: 24px;
+            border-radius: 12px;
+            max-width: 1200px;
+            margin: 0 auto 18px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--border-color);
+        }
+
+        h2 { margin: 0 0 10px; font-size: 1.3rem; }
+        .instrucciones {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+        .instrucciones code {
+            background: #f1f5f9;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            color: #334155;
+        }
+
+        .fila {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 140px;
+            resize: vertical;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-family: 'Menlo', 'Consolas', monospace;
+            font-size: 0.85rem;
+            padding: 12px;
+            box-sizing: border-box;
+            margin-bottom: 12px;
+        }
+
+        .chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid var(--border-color);
+            background: #f8fafc;
+            color: var(--text-muted);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+
+        button, label.btn {
+            border: 0;
+            border-radius: 7px;
+            padding: 10px 14px;
+            font-family: inherit;
+            font-size: 0.86rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .btn-primario { background: var(--primary); color: #fff; }
+        .btn-primario:hover { background: var(--primary-hover); }
+        .btn-ok { background: var(--success); color: #fff; }
+        .btn-alerta { background: var(--warning); color: #fff; }
+        .btn-danger { background: var(--danger); color: #fff; }
+        .btn-light {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+        }
+
+        input[type="file"] { display: none; }
+        .estado { font-size: 0.84rem; color: var(--text-muted); font-weight: 600; }
+
+        .ajustes {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+            align-items: center;
+        }
+        .ajustes label {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .ajustes input[type="range"] { width: 180px; }
+        .ajustes .valor {
+            min-width: 45px;
+            text-align: right;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .tabla-wrap {
+            overflow: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            background: #fff;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.82rem;
+        }
+        th, td {
+            border-bottom: 1px solid #edf2f7;
+            padding: 10px 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        thead th {
+            background: #f8fafc;
+            color: #334155;
+            font-size: 0.78rem;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .badge {
+            border-radius: 999px;
+            padding: 3px 8px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            display: inline-block;
+        }
+        .s-ok { background: #ecfdf5; color: #047857; }
+        .s-mid { background: #fffbeb; color: #b45309; }
+        .s-low { background: #fef2f2; color: #b91c1c; }
+        .s-none { background: #e2e8f0; color: #475569; }
+
+        .subtitulo { margin: 0 0 8px; font-size: 1rem; }
+        .muted { color: var(--text-muted); font-size: 0.82rem; }
+        .btn-mini {
+            border: 1px solid var(--border-color);
+            background: #fff;
+            color: #334155;
+            padding: 6px 8px;
+            border-radius: 6px;
+            font-size: 0.74rem;
+            cursor: pointer;
+            font-weight: 700;
+            margin-right: 4px;
+        }
+        .btn-mini:hover { background: #f8fafc; }
+        .btn-mini-ok[disabled] {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+        .btn-mini-danger {
+            background: #ef4444;
+            border-color: #dc2626;
+            color: #fff;
+        }
+        .btn-mini-danger:hover { background: #dc2626; }
+        .btn-mini-success {
+            background: #16a34a;
+            border-color: #15803d;
+            color: #fff;
+        }
+        .btn-mini-success:hover { background: #15803d; }
+        .btn-mini-muted {
+            background: #e5e7eb;
+            border-color: #d1d5db;
+            color: #6b7280;
+        }
+        .btn-mini-revert {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            padding: 4px 7px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-weight: 700;
+        }
+        .btn-mini-revert:hover { background: #f8fafc; }
+        .barcode-link {
+            color: #1971c2;
+            text-decoration: underline;
+            cursor: pointer;
+        }
+        .modal-ficha {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .35);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .modal-ficha.open { display: flex; }
+        .modal-ficha-card {
+            width: min(760px, 92vw);
+            max-height: 78vh;
+            overflow: auto;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 12px 14px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .2);
+        }
+        .modal-ficha-card h4 {
+            margin: 0 0 10px 0;
+            color: var(--azul-usc);
+        }
+        .ficha-grid {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 6px 10px;
+            font-size: .84rem;
+        }
+        .ficha-grid .k { font-weight: 700; color: #495057; }
+        .ficha-grid .v { color: #212529; word-break: break-word; }
+        .pipeline-wrap {
+            display: none;
+            margin: 10px 0 12px;
+            padding: 10px 12px;
+            border: 1px solid #c7d2fe;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #eef2ff 0%, #f8fafc 100%);
+        }
+        .pipeline-bar {
+            height: 8px;
+            border-radius: 999px;
+            overflow: hidden;
+            background: #e2e8f0;
+            margin-bottom: 8px;
+        }
+        .pipeline-fill {
+            width: 0%;
+            height: 100%;
+            border-radius: 999px;
+            background: linear-gradient(90deg, var(--primary), #818cf8);
+            transition: width .25s ease;
+        }
+        .pipeline-label {
+            font-size: 0.8rem;
+            color: #3730a3;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        /* Triaje masivo por título (1:N lista → catálogo) */
+        .match-triage {
+            vertical-align: top;
+        }
+        .match-triage--hecho .match-triage-card {
+            border-left-color: var(--success);
+            background: linear-gradient(90deg, #ecfdf5 0%, #fff 48%);
+            opacity: 0.94;
+        }
+        .match-triage-card {
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--primary);
+            border-radius: 10px;
+            padding: 12px 14px;
+            background: #fafafa;
+            text-align: left;
+        }
+        .match-triage-head {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 14px;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .match-triage-busqueda strong { display: block; font-size: 0.92rem; color: var(--text-main); margin-bottom: 4px; }
+        .match-triage-acciones {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+        }
+        .match-triage-titulo-busqueda {
+            font-size: 1.06rem;
+            line-height: 1.35;
+            display: block;
+            color: var(--text-main);
+        }
+        .cand-tit-catalogo {
+            font-size: 0.94rem;
+            line-height: 1.38;
+            display: inline-block;
+        }
+        .match-triage-cand {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 8px;
+            background: #fff;
+        }
+        .match-triage-cand:first-of-type { margin-top: 0; }
+        .details-triage summary {
+            cursor: pointer;
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 0.86rem;
+        }
+        .details-triage[open] summary { margin-bottom: 8px; }
+        .badge-exact {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        /* Semáforo match (título / autor en fichas candidato) */
+        .match-pct { font-weight: 700; }
+        .match-pct--alto { color: #047857; }
+        .match-pct--medio { color: #b45309; }
+        .match-pct--bajo { color: #b91c1c; }
+        .match-pct--na { color: #64748b; font-weight: 600; }
+
+        /* Menú Filtrar / Ordenar (matches) */
+        .orden-toolbar {
+            align-items: center;
+            position: relative;
+        }
+        .orden-match-dropdown {
+            position: relative;
+        }
+        .orden-match-dropdown > summary.btn-orden-sum {
+            list-style: none;
+            user-select: none;
+        }
+        .orden-match-dropdown > summary.btn-orden-sum::-webkit-details-marker {
+            display: none;
+        }
+        .orden-match-dropdown .menu-orden-match {
+            position: absolute;
+            left: 0;
+            top: calc(100% + 6px);
+            min-width: 260px;
+            max-height: min(72vh, 420px);
+            overflow: auto;
+            margin: 0;
+            padding: 6px;
+            border-radius: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-surface);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+            list-style: none;
+        }
+        .orden-match-dropdown .menu-orden-match button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 0;
+            background: transparent;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.82rem;
+            font-family: inherit;
+            font-weight: 600;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+        .orden-match-dropdown .menu-orden-match button:hover {
+            background: #f1f5f9;
+        }
+        .cand-metrics-row {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px 12px;
+            font-size: 0.82rem;
+            margin-top: 10px;
+            line-height: 1.45;
+            padding-top: 8px;
+            border-top: 1px dashed #e2e8f0;
+        }
+        .cand-meta-row {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 8px;
+            line-height: 1.5;
+        }
+        .cand-barcodes-row {
+            font-size: 0.78rem;
+            margin-top: 8px;
+        }
+        .cand-acciones-top {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        /* Triaje en 3 fases */
+        .triaje-bucket {
+            margin-bottom: 20px;
+        }
+        .triaje-bucket--pareados {
+            border: 1px solid #86efac;
+            background: linear-gradient(165deg, #ecfdf5 0%, #ffffff 42%);
+            border-radius: 12px;
+            padding-top: 4px;
+            box-shadow: 0 1px 3px rgba(16, 185, 129, 0.12);
+        }
+        .triaje-bucket--pareados h3 {
+            color: #047857;
+        }
+        .panel-orden-encadenado {
+            padding: 12px 14px;
+            min-width: 280px;
+        }
+        .panel-orden-fila {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px 12px;
+            margin-bottom: 10px;
+        }
+        .panel-orden-fila label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .panel-orden-fila select {
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 8px;
+            font-size: 0.8rem;
+            font-family: inherit;
+        }
+        .ficha-pareada .match-triage-card {
+            border-left-color: #22c55e;
+            background: #fafefa;
+        }
+    </style>
+</head>
+<body>
+    <section class="controles">
+        <h2>Mapeo por Títulos</h2>
+        <div class="instrucciones">
+            1) Carga el catálogo del sistema (TSV, Excel, TXT de Sirsi o archivo <code>.mrc</code> Unicode).<br>
+            2) Elige modo de búsqueda: título, casa publicadora o <strong>barcode (exacto)</strong>.<br>
+            3) Marca qué columnas pegarás (orden: <strong>Título</strong> · <strong>Autor</strong> · <strong>Casa publicadora</strong> · <strong>Fecha</strong>) y pega tu lista desde Excel.<br>
+            4) Pulsa <code>Analizar mapeo</code>; en modo título aparecen todas las coincidencias que superan el umbral · elige una con <strong>Parear con este</strong> o marca <strong>No es match</strong>.
+        </div>
+
+        <div class="fila">
+            <label class="btn btn-light" for="inputTSV">Cargar TSV</label>
+            <input id="inputTSV" type="file" accept=".tsv,.txt">
+
+            <label class="btn btn-light" for="inputExcel">Cargar Excel</label>
+            <input id="inputExcel" type="file" accept=".xlsx,.xls">
+
+            <label class="btn btn-light" for="inputSirsi">Cargar TXT Sirsi</label>
+            <input id="inputSirsi" type="file" accept=".txt">
+
+            <label class="btn btn-light" for="inputMrc">Cargar MRC</label>
+            <input id="inputMrc" type="file" accept=".mrc">
+
+            <button type="button" class="btn-danger" id="btnQuitarCatalogo">Quitar catálogo</button>
+            <span class="chip" id="estadoCatalogo">Sin catálogo</span>
+        </div>
+        <div class="pipeline-wrap" id="pipelineCargaWrap">
+            <div class="pipeline-bar"><div class="pipeline-fill" id="pipelineCargaFill"></div></div>
+            <div class="pipeline-label" id="pipelineCargaLabel">Preparando carga...</div>
+        </div>
+
+        <div class="ajustes">
+            <label>
+                Buscar por:
+                <select id="modoBusqueda" style="border:1px solid var(--border-color); border-radius:6px; padding:6px 8px; font-size:.82rem;">
+                    <option value="titulo">Título</option>
+                    <option value="publicadora">Casa publicadora</option>
+                    <option value="barcode">Barcode (exacto)</option>
+                </select>
+            </label>
+            <label id="wrapUmbral">
+                Umbral mínimo de match:
+                <input type="range" id="umbral" min="40" max="100" value="50">
+                <span class="valor" id="umbralValor">50%</span>
+            </label>
+            <span class="muted">Recomendado: 45%-50% si prefieres revisar y limpiar manualmente.</span>
+        </div>
+
+        <div class="ajustes" style="padding:10px 12px; background:#f1f5f9; border-radius:8px; border:1px solid var(--border-color);">
+            <label style="font-size:.84rem; font-weight:600; color:var(--text-main); display:inline-flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" id="chkMantenerSesion" checked>
+                Mantener al recargar (catálogo, lista pegada y triaje: pareados / sin match)
+            </label>
+            <span class="muted" style="font-size:.78rem;">Desactivado: al recargar se borra lo guardado en este navegador.</span>
+        </div>
+
+        <div class="ajustes">
+            <span class="muted" style="font-weight:700;">Columnas pegadas (orden):</span>
+            <span class="muted">Título (siempre) +</span>
+            <label><input type="checkbox" id="colAutor"> Autor</label>
+            <label><input type="checkbox" id="colPublicadora"> Casa publicadora</label>
+            <label><input type="checkbox" id="colFecha"> Fecha (año)</label>
+        </div>
+
+        <textarea id="inputLista" placeholder="Pega aquí la lista desde Excel (columnas en orden)...
+Ejemplo solo título:
+Cien anos de soledad
+Ejemplo título + autor + editorial + año:
+Cien anos de soledad	Garcia Marquez, Gabriel	Sudamericana	1967"></textarea>
+
+        <div class="fila">
+            <button type="button" class="btn-primario" id="btnAnalizar">Analizar mapeo</button>
+            <button type="button" class="btn-alerta" id="btnLimpiar">Limpiar entrada</button>
+            <span class="estado" id="estadoProceso"></span>
+        </div>
+        <div class="pipeline-wrap" id="pipelineAnalisisWrap">
+            <div class="pipeline-bar"><div class="pipeline-fill" id="pipelineAnalisisFill"></div></div>
+            <div class="pipeline-label" id="pipelineAnalisisLabel">Preparando análisis...</div>
+        </div>
+    </section>
+
+    <section class="controles triaje-bucket">
+        <h3 class="subtitulo">Triaje · exportar y ordenar</h3>
+        <div class="muted" id="resumenGlobalTriaje">Aún no hay análisis.</div>
+        <div class="fila orden-toolbar" style="margin-top:8px; margin-bottom:8px;">
+            <button class="btn-mini" id="btnCopiarMatch">Copiar matches</button>
+            <details id="ordenMatchDetails" class="orden-match-dropdown">
+                <summary class="btn-mini btn-orden-sum">Filtrar / Ordenar</summary>
+                <div class="menu-orden-match panel-orden-encadenado">
+                    <p class="muted" style="margin:0 0 10px; font-size:.78rem; line-height:1.45;">Se aplica por separado en <strong>Para revisar</strong>, <strong>Pareados</strong> y <strong>Sin match</strong> (mismos criterios).</p>
+                    <div class="panel-orden-fila">
+                        <label>1.º criterio
+                            <select id="ordCampo1"></select>
+                            <select id="ordDir1"><option value="asc">Ascendente</option><option value="desc" selected>Descendente</option></select>
+                        </label>
+                    </div>
+                    <div class="panel-orden-fila">
+                        <label>2.º criterio (si empatan)
+                            <select id="ordCampo2"></select>
+                            <select id="ordDir2"><option value="asc">Ascendente</option><option value="desc" selected>Descendente</option></select>
+                        </label>
+                    </div>
+                    <button type="button" class="btn-mini btn-mini-ok" id="btnAplicarOrden">Aplicar orden</button>
+                </div>
+            </details>
+        </div>
+    </section>
+
+    <section class="controles triaje-bucket" id="secParaRevisar">
+        <h3 class="subtitulo">Para revisar</h3>
+        <div class="muted" id="resumenPendientes">—</div>
+        <div class="tabla-wrap" style="max-height: 420px; margin-top: 8px;">
+            <table>
+                <tbody id="tablaPendientesBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="controles triaje-bucket triaje-bucket--pareados" id="secPareados">
+        <h3 class="subtitulo">Pareados (Match)</h3>
+        <div class="muted" id="resumenPareados">—</div>
+        <div class="tabla-wrap" style="max-height: 360px; margin-top: 8px;">
+            <table>
+                <tbody id="tablaPareadosBody"></tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="controles triaje-bucket" id="secSinMatch">
+        <h3 class="subtitulo">Sin match</h3>
+        <div class="muted" id="resumenNoMatch">—</div>
+        <div class="fila" style="margin-top:8px; margin-bottom:8px;">
+            <button class="btn-mini" id="btnCopiarNoMatch">Copiar no match</button>
+            <button class="btn-mini" id="btnCopiarTodo">Copiar ambas listas</button>
+        </div>
+        <div class="tabla-wrap" style="max-height: 320px; margin-top: 8px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Título lista</th>
+                        <th data-col="fechaLista">Fecha lista</th>
+                        <th>Acción</th>
+                    </tr>
+                </thead>
+                <tbody id="tablaNoMatchBody"></tbody>
+            </table>
+        </div>
+    </section>
+    <div id="modalFicha" class="modal-ficha" aria-hidden="true">
+        <div class="modal-ficha-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px;">
+                <h4>Ficha del libro</h4>
+                <button class="btn-mini" id="btnCerrarFicha">Cerrar</button>
+            </div>
+            <div id="fichaBody" class="ficha-grid"></div>
+        </div>
+    </div>
+
+<script>
+(() => {
+    const COL_TSV_BARCODE = 'codigo de barra';
+    const COL_TSV_TITULO = 'titulo';
+    const COL_TSV_AUTOR = 'autor';
+    const COL_TSV_PUBLICACION = 'publicacion inf';
+    const COL_TSV_ISBN = 'isbn';
+    const COL_TSV_SIGNATURA = 'signatura';
+    const COL_TSV_ANIO = 'ano';
+    const LS_CAT = 'mapeoTitulos_catalogo_v1';
+    const LS_SESION = 'mapeoTitulos_sesion_v1';
+    const LS_KEEP_SESSION = 'mapeoTitulos_mantenerSesion';
+    const LS_UMBRAL = 'mapeoTitulos_umbral';
+
+    let catalogoMap = new Map(); // barcode / 001 -> meta
+    let catalogoUnidad = 'barcodes';
+    let ultimoNombreCatalogo = '';
+    let timerPersistirSesion = null;
+    let indiceTitulos = []; // [{id, original, norm, tokens, barcodes:Set, len, pref2}]
+    let indicePorToken = new Map(); // token -> Set(ids)
+    let indicePorPref2 = new Map(); // prefijo(2) -> Set(ids)
+    let indicePorNorm = new Map(); // norm -> item
+    let estadoResultados = { pendientes: [], pareados: [], sinMatch: [], umbral: 0, tieneAnalisis: false };
+
+    /** Opciones disponibles para orden encadenado (matches / triaje). */
+    const OPCIONES_ORDEN_MATCH = [
+        { campo: 'titulo', texto: 'Título lista' },
+        { campo: 'tituloSistema', texto: 'Título en catálogo' },
+        { campo: 'autorLista', texto: 'Autor lista' },
+        { campo: 'autorCatalogo', texto: 'Autor catálogo' },
+        { campo: 'pubLista', texto: 'Casa publicadora (lista)' },
+        { campo: 'casaPublicadora', texto: 'Casa publicadora (cat.)' },
+        { campo: 'fechaLista', texto: 'Fecha lista' },
+        { campo: 'anioCatalogo', texto: 'Año catálogo' },
+        { campo: 'similitud', texto: '% Match título' },
+        { campo: 'simAutor', texto: '% Match autor' },
+        { campo: 'simPub', texto: '% Match publicadora' },
+        { campo: 'simFecha', texto: '% Match fecha' },
+        { campo: 'otros', texto: 'Nº opciones candidatos' },
+        { campo: 'barcodes', texto: 'Cant. barcodes' },
+        { campo: 'registro', texto: 'Registro / estado' }
+    ];
+    const OPCIONES_ORDEN_SIN_MATCH = [
+        { campo: 'titulo', texto: 'Título lista' },
+        { campo: 'fechaLista', texto: 'Fecha lista' },
+        { campo: 'origen', texto: 'Origen (umbral vs descarte)' }
+    ];
+    let analizando = false;
+    const stopwords = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'e', 'a', 'en', 'por', 'para', 'con', 'un', 'una']);
+
+    const ui = {
+        inputTSV: document.getElementById('inputTSV'),
+        inputExcel: document.getElementById('inputExcel'),
+        inputSirsi: document.getElementById('inputSirsi'),
+        inputMrc: document.getElementById('inputMrc'),
+        inputLista: document.getElementById('inputLista'),
+        modoBusqueda: document.getElementById('modoBusqueda'),
+        umbral: document.getElementById('umbral'),
+        umbralValor: document.getElementById('umbralValor'),
+        estadoCatalogo: document.getElementById('estadoCatalogo'),
+        estadoProceso: document.getElementById('estadoProceso'),
+        tablaPendientesBody: document.getElementById('tablaPendientesBody'),
+        tablaPareadosBody: document.getElementById('tablaPareadosBody'),
+        tablaNoMatchBody: document.getElementById('tablaNoMatchBody'),
+        resumenGlobalTriaje: document.getElementById('resumenGlobalTriaje'),
+        resumenPendientes: document.getElementById('resumenPendientes'),
+        resumenPareados: document.getElementById('resumenPareados'),
+        resumenNoMatch: document.getElementById('resumenNoMatch'),
+        colAutor: document.getElementById('colAutor'),
+        colPublicadora: document.getElementById('colPublicadora'),
+        colFecha: document.getElementById('colFecha'),
+        chkMantenerSesion: document.getElementById('chkMantenerSesion'),
+        modalFicha: document.getElementById('modalFicha'),
+        fichaBody: document.getElementById('fichaBody'),
+        btnCerrarFicha: document.getElementById('btnCerrarFicha')
+    };
+    const pipeline = {
+        cargaWrap: document.getElementById('pipelineCargaWrap'),
+        cargaFill: document.getElementById('pipelineCargaFill'),
+        cargaLabel: document.getElementById('pipelineCargaLabel'),
+        analisisWrap: document.getElementById('pipelineAnalisisWrap'),
+        analisisFill: document.getElementById('pipelineAnalisisFill'),
+        analisisLabel: document.getElementById('pipelineAnalisisLabel')
+    };
+
+    function setPipelineCarga(show, pct, label) {
+        pipeline.cargaWrap.style.display = show ? 'block' : 'none';
+        if (!show) return;
+        pipeline.cargaFill.style.width = `${Math.max(0, Math.min(100, pct || 0))}%`;
+        pipeline.cargaLabel.textContent = label || 'Procesando catálogo...';
+    }
+
+    function setPipelineAnalisis(show, pct, label) {
+        pipeline.analisisWrap.style.display = show ? 'block' : 'none';
+        if (!show) return;
+        pipeline.analisisFill.style.width = `${Math.max(0, Math.min(100, pct || 0))}%`;
+        pipeline.analisisLabel.textContent = label || 'Analizando...';
+    }
+
+    function normHeaderTSV(h) {
+        const s = String(h || '').replace(/^\uFEFF/, '').trim().replace(/\s+/g, ' ').toLowerCase();
+        try { return s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { return s; }
+    }
+
+    function buscarIndiceHeader(headers, aliases) {
+        const normAliases = aliases.map(a => normHeaderTSV(a));
+        return headers.findIndex(h => normAliases.includes(normHeaderTSV(h)));
+    }
+
+    /** Elimina segmentos entre paréntesis (y anidados) para que no afecten al match de título/autor. */
+    function quitarContenidoParentesis(raw) {
+        let s = String(raw || '')
+            .replace(/\uFF08/g, '(')
+            .replace(/\uFF09/g, ')');
+        let prev;
+        do {
+            prev = s;
+            s = s.replace(/\([^()]*\)/g, ' ');
+        } while (s !== prev);
+        s = s.replace(/\([^)]*$/g, ' ');
+        return s;
+    }
+
+    function normalizarTitulo(str) {
+        let s = quitarContenidoParentesis(String(str || '').trim()).toLowerCase();
+        try { s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, ''); } catch (e) { /* ignore */ }
+        return s
+            .replace(/[\(\)\[\]\{\}"'`´\u201C\u201D\u201E\u201F\u00AB\u00BB\u2018\u2019\u2033\u2036]/g, ' ')
+            .replace(/[¡!¿?.,;:]+/g, ' ')
+            .replace(/[^a-z0-9\s]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    function recortarTituloBase(str) {
+        let s = String(str || '').trim();
+        // Quita mención de responsabilidad bibliográfica: " / Autor..."
+        s = s.replace(/\s\/.*$/, '').trim();
+        return s;
+    }
+
+    function normalizarAutor(str) {
+        const raw = String(str || '').trim();
+        if (!raw) return '';
+        // Convierte "Apellido, Nombre" -> "nombre apellido" para comparar con "Nombre Apellido"
+        let s = raw;
+        if (s.includes(',')) {
+            const parts = s.split(',').map(p => p.trim()).filter(Boolean);
+            if (parts.length >= 2) s = `${parts.slice(1).join(' ')} ${parts[0]}`.trim();
+        }
+        return normalizarTitulo(s);
+    }
+
+    /** Sirsi/MARC personal author: usa solo los dos primeros segmentos coma (apellidos, nombre); descarta fechas y roles tras la segunda coma. */
+    function recortarAutorCatalogoMarc(raw) {
+        const s = String(raw || '').trim();
+        if (!s) return '';
+        const parts = s.split(',').map(p => p.trim()).filter(p => p.length > 0);
+        if (!parts.length) return '';
+        if (parts.length === 1) return parts[0];
+        return `${parts[0]}, ${parts[1]}`;
+    }
+
+    /** Clases semáforo para porcentaje entero 0–100 (match título). */
+    function claseMatchPctTitulo(pct) {
+        const n = Number(pct);
+        if (!Number.isFinite(n)) return 'match-pct match-pct--na';
+        if (n >= 80) return 'match-pct match-pct--alto';
+        if (n >= 60) return 'match-pct match-pct--medio';
+        return 'match-pct match-pct--bajo';
+    }
+
+    /** Clases semáforo para score 0–1 o null (match autor vs lista). */
+    function claseMatchPctAutor(scoreOrNull) {
+        if (scoreOrNull === null || scoreOrNull === undefined) return 'match-pct match-pct--na';
+        const pct = Math.round(Number(scoreOrNull) * 100);
+        if (pct >= 80) return 'match-pct match-pct--alto';
+        if (pct >= 60) return 'match-pct match-pct--medio';
+        return 'match-pct match-pct--bajo';
+    }
+
+    function htmlSpanPctTitulo(score01) {
+        const pct = Math.round((Number(score01) || 0) * 100);
+        return `<span class="${claseMatchPctTitulo(pct)}">${pct}%</span>`;
+    }
+
+    function htmlSpanPctAutor(scoreVal) {
+        return htmlSpanPctOpcional(scoreVal);
+    }
+
+    /** Porcentaje 0–100 con semáforo (autor, publicadora, fecha, etc.). null/undefined → — */
+    function htmlSpanPctOpcional(scoreVal) {
+        if (scoreVal === null || scoreVal === undefined) {
+            return '<span class="match-pct match-pct--na">—</span>';
+        }
+        const pct = Math.round(Number(scoreVal) * 100);
+        return `<span class="${claseMatchPctAutor(scoreVal)}">${pct}%</span>`;
+    }
+
+    /** Máxima diferencia de años para que el match de fecha llegue a 0% (lineal entre 0 y este valor). */
+    const MARGEN_ANIO_MATCH_MAX = 15;
+
+    /**
+     * Match de año (0–1): 100% mismo año; baja linealmente; 0% si la diferencia ≥ MARGEN_ANIO_MATCH_MAX.
+     * Ej.: ±1 año ≈ 93%, ±2 ≈ 87%, ±7 ≈ 53%, ±15 o más = 0%.
+     * null si la lista no trae año (no se evalúa).
+     */
+    function scoreAnioPublicacion(listaRaw, catalogoRaw) {
+        const a = normalizarAnio4(listaRaw);
+        if (!a) return null;
+        const b = normalizarAnio4(catalogoRaw);
+        if (!b) return 0;
+        const ya = parseInt(a, 10);
+        const yb = parseInt(b, 10);
+        if (!Number.isFinite(ya) || !Number.isFinite(yb)) return 0;
+        const diff = Math.abs(ya - yb);
+        if (diff === 0) return 1;
+        if (diff >= MARGEN_ANIO_MATCH_MAX) return 0;
+        return 1 - (diff / MARGEN_ANIO_MATCH_MAX);
+    }
+
+    function tokenizar(strNorm) {
+        return strNorm
+            .split(' ')
+            .map(t => t.trim())
+            .filter(t => t && !stopwords.has(t));
+    }
+
+    function levenshtein(a, b) {
+        const n = a.length, m = b.length;
+        if (!n) return m;
+        if (!m) return n;
+        const dp = new Array(m + 1);
+        for (let j = 0; j <= m; j++) dp[j] = j;
+        for (let i = 1; i <= n; i++) {
+            let prev = dp[0];
+            dp[0] = i;
+            for (let j = 1; j <= m; j++) {
+                const tmp = dp[j];
+                const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+                dp[j] = Math.min(dp[j] + 1, dp[j - 1] + 1, prev + cost);
+                prev = tmp;
+            }
+        }
+        return dp[m];
+    }
+
+    function jaccardTokens(t1, t2) {
+        const s1 = new Set(t1), s2 = new Set(t2);
+        let inter = 0;
+        s1.forEach(v => { if (s2.has(v)) inter++; });
+        const union = s1.size + s2.size - inter;
+        return union ? inter / union : 0;
+    }
+
+    function similitudCompuesta(aNorm, bNorm, aTokens, bTokens) {
+        if (!aNorm || !bNorm) return 0;
+        if (aNorm === bNorm) return 1;
+
+        const maxLen = Math.max(aNorm.length, bNorm.length);
+        const lev = 1 - (levenshtein(aNorm, bNorm) / Math.max(1, maxLen));
+        const jac = jaccardTokens(aTokens, bTokens);
+
+        // Bonus cuando una cadena contiene la otra (ej. paréntesis/versiones)
+        const contiene = (aNorm.includes(bNorm) || bNorm.includes(aNorm)) ? 1 : 0;
+
+        // Peso híbrido: texto + tokens + tolerancia por subcadena
+        return (lev * 0.55) + (jac * 0.35) + (contiene * 0.10);
+    }
+
+    function dormirFrame() {
+        return new Promise(resolve => setTimeout(resolve, 0));
+    }
+
+    function symphonyTxtToRecords(rawText) {
+        const lines = String(rawText).split('\n');
+        const records = [];
+        let biblioMemory = {};
+        let itemMemory = {};
+        let currentField = '';
+        let previousLine = '';
+        let expectingNewBib = true;
+        const knownLabels = ['ISBN:', 'Personal author:', 'Corporate author:', 'Title:', 'Portion of title:', 'Physical description:', 'General note:', 'Abstract:', 'Local note:', 'Subject:', 'Personal subject:', 'Edition:', 'Publication info:', 'Series:', 'Contents:', 'Based on (work):'];
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = (lines[i] || '').trim();
+            const nextLine = (lines[i + 1] || '').trim();
+            if (!line || line === 'Bibliography' || line.startsWith('Produced ')) continue;
+
+            const isNewLabel = knownLabels.find(label => line.startsWith(label));
+            const esLineaItem = line.startsWith('copy:') || line.startsWith('home location:') || line.startsWith('current location:');
+            const genericLabel = (!isNewLabel && !esLineaItem) ? line.match(/^([A-Za-z][A-Za-z \/\-\(\)]+):\s*(.*)$/) : null;
+            if (isNewLabel || genericLabel) {
+                if (expectingNewBib) {
+                    biblioMemory = {};
+                    expectingNewBib = false;
+                }
+                currentField = isNewLabel
+                    ? isNewLabel.replace(':', '').trim()
+                    : String(genericLabel[1] || '').trim();
+                const value = isNewLabel
+                    ? line.substring(isNewLabel.length).trim()
+                    : String(genericLabel[2] || '').trim();
+                biblioMemory[currentField] = biblioMemory[currentField] ? `${biblioMemory[currentField]} | ${value}` : value;
+            } else if (line.startsWith('copy:')) {
+                const idMatch = line.match(/id:\s*([^\s]+)/i);
+                itemMemory['ID'] = idMatch ? String(idMatch[1] || '').trim() : '';
+            } else if (line.startsWith('home location:')) {
+                const homeLocMatch = line.match(/home location:\s*(.+)$/i);
+                itemMemory['Home Location'] = homeLocMatch ? homeLocMatch[1] : '';
+                if (nextLine.startsWith('current location:')) {
+                    const currentLocMatch = nextLine.match(/current location:\s*(.+)$/i);
+                    itemMemory['Current Location'] = currentLocMatch ? currentLocMatch[1] : '';
+                }
+                records.push({ ...biblioMemory, ...itemMemory });
+                itemMemory = {};
+                currentField = '';
+                expectingNewBib = true;
+            } else if (line.startsWith('current location:')) {
+                // Algunos reportes no incluyen "home location", así que cerramos registro aquí.
+                const currentLocMatch = line.match(/current location:\s*(.+)$/i);
+                itemMemory['Current Location'] = currentLocMatch ? currentLocMatch[1] : '';
+                records.push({ ...biblioMemory, ...itemMemory });
+                itemMemory = {};
+                currentField = '';
+                expectingNewBib = true;
+            } else if (currentField && !expectingNewBib) {
+                if (!nextLine.startsWith('copy:') && !line.startsWith('cat') && !line.startsWith('current location:')) {
+                    biblioMemory[currentField] = biblioMemory[currentField] ? `${biblioMemory[currentField]} ${line}` : line;
+                }
+            }
+            if (line) previousLine = line;
+            if (!previousLine) previousLine = '';
+        }
+        // Fallback: si quedó un item abierto al finalizar archivo, lo guardamos.
+        if (itemMemory && (itemMemory['ID'] || itemMemory['Current Location'] || itemMemory['Home Location'])) {
+            records.push({ ...biblioMemory, ...itemMemory });
+        }
+        return records;
+    }
+
+    function construirIndiceDesdeCatalogo() {
+        const porTituloNorm = new Map();
+        catalogoMap.forEach((meta, barcode) => {
+            const titulo = recortarTituloBase(String(meta.titulo || '').trim());
+            if (!titulo) return;
+            const norm = normalizarTitulo(titulo);
+            if (!norm) return;
+            if (!porTituloNorm.has(norm)) {
+                porTituloNorm.set(norm, {
+                    original: titulo,
+                    norm,
+                    tokens: tokenizar(norm),
+                    barcodes: new Set()
+                });
+            }
+            porTituloNorm.get(norm).barcodes.add(barcode);
+        });
+        indiceTitulos = Array.from(porTituloNorm.values()).map((x, idx) => ({
+            id: idx,
+            original: x.original,
+            norm: x.norm,
+            tokens: x.tokens,
+            barcodes: x.barcodes,
+            len: x.norm.length,
+            pref2: x.norm.slice(0, 2)
+        }));
+
+        indicePorToken = new Map();
+        indicePorPref2 = new Map();
+        indicePorNorm = new Map();
+        for (let i = 0; i < indiceTitulos.length; i++) {
+            const item = indiceTitulos[i];
+            indicePorNorm.set(item.norm, item);
+            for (let t = 0; t < item.tokens.length; t++) {
+                const tk = item.tokens[t];
+                if (!indicePorToken.has(tk)) indicePorToken.set(tk, new Set());
+                indicePorToken.get(tk).add(item.id);
+            }
+            if (item.pref2) {
+                if (!indicePorPref2.has(item.pref2)) indicePorPref2.set(item.pref2, new Set());
+                indicePorPref2.get(item.pref2).add(item.id);
+            }
+        }
+    }
+
+    function armarCandidatos(qNorm, qTokens) {
+        const ids = new Set();
+        const overlapPorId = new Map();
+
+        // 1) Candidatos por token compartido.
+        for (let i = 0; i < qTokens.length; i++) {
+            const tk = qTokens[i];
+            const bucket = indicePorToken.get(tk);
+            if (!bucket) continue;
+            let count = 0;
+            for (const id of bucket) {
+                ids.add(id);
+                overlapPorId.set(id, (overlapPorId.get(id) || 0) + 1);
+                count++;
+                if (count >= 3000) break; // límite por token para evitar explosión
+            }
+        }
+
+        // 2) Refuerzo por prefijo.
+        const pref2 = qNorm.slice(0, 2);
+        const prefBucket = pref2 ? indicePorPref2.get(pref2) : null;
+        if (prefBucket) {
+            let countPref = 0;
+            for (const id of prefBucket) {
+                ids.add(id);
+                countPref++;
+                if (countPref >= 4000) break;
+            }
+        }
+
+        // 3) Fallback controlado si no hay candidatos.
+        if (ids.size === 0) {
+            const salto = Math.max(1, Math.floor(indiceTitulos.length / 5000));
+            for (let i = 0; i < indiceTitulos.length; i += salto) ids.add(indiceTitulos[i].id);
+        }
+
+        // 4) Filtro por longitud similar (acelera Levenshtein).
+        const qLen = qNorm.length;
+        const out = [];
+        for (const id of ids) {
+            const c = indiceTitulos[id];
+            if (!c) continue;
+            const diff = Math.abs(c.len - qLen);
+            const maxPermitido = Math.max(8, Math.floor(Math.max(c.len, qLen) * 0.35));
+            if (diff <= maxPermitido) out.push(c);
+        }
+
+        // Si el filtro deja muy poco, devolvemos candidatos crudos.
+        if (out.length < 30) {
+            const crudos = [];
+            let n = 0;
+            for (const id of ids) {
+                const c = indiceTitulos[id];
+                if (!c) continue;
+                crudos.push(c);
+                n++;
+                if (n >= 1500) break;
+            }
+            return crudos;
+        }
+
+        // Tope final de candidatos por query para mantener tiempos razonables.
+        // Se prioriza por mayor overlap de tokens y menor diferencia de longitud.
+        out.sort((a, b) => {
+            const oa = overlapPorId.get(a.id) || 0;
+            const ob = overlapPorId.get(b.id) || 0;
+            if (ob !== oa) return ob - oa;
+            const da = Math.abs(a.len - qNorm.length);
+            const db = Math.abs(b.len - qNorm.length);
+            return da - db;
+        });
+        if (out.length > 2200) return out.slice(0, 2200);
+        return out;
+    }
+
+    function sesionPersistenciaActiva() {
+        return !!(ui.chkMantenerSesion && ui.chkMantenerSesion.checked);
+    }
+
+    function leerPrefMantenerSesion() {
+        try {
+            const v = localStorage.getItem(LS_KEEP_SESSION);
+            return v === null || v === '1';
+        } catch (e) {
+            return true;
+        }
+    }
+
+    function guardarPrefMantenerSesion(activo) {
+        try {
+            localStorage.setItem(LS_KEEP_SESSION, activo ? '1' : '0');
+        } catch (e) { /* ignore */ }
+    }
+
+    function limpiarDatosPersistidos() {
+        try {
+            localStorage.removeItem(LS_CAT);
+            localStorage.removeItem(LS_SESION);
+        } catch (e) { /* ignore */ }
+    }
+
+    function guardarCatalogoEnLS() {
+        if (!sesionPersistenciaActiva()) return;
+        try {
+            const entries = Array.from(catalogoMap.entries()).map(([barcode, meta]) => {
+                const m = meta || {};
+                return [barcode, {
+                    titulo: m.titulo || '',
+                    titulo245ab: m.titulo245ab || '',
+                    autor: m.autor || '',
+                    casaPublicadora: m.casaPublicadora || '',
+                    anioPublicacion: m.anioPublicacion || '',
+                    signatura: m.signatura || '',
+                    clasificacion999: m.clasificacion999 || '',
+                    itemType999: m.itemType999 || '',
+                    location999: m.location999 || '',
+                    fechaCreacion999: m.fechaCreacion999 || '',
+                    isbn: m.isbn || '',
+                    publicationInfo: m.publicationInfo || '',
+                    detalle: (m.detalle && typeof m.detalle === 'object') ? m.detalle : {}
+                }];
+            });
+            localStorage.setItem(LS_CAT, JSON.stringify({
+                v: 2,
+                entries,
+                nombre: ultimoNombreCatalogo || '',
+                unidad: catalogoUnidad || 'barcodes'
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function cargarCatalogoDesdeLS() {
+        try {
+            const raw = localStorage.getItem(LS_CAT);
+            if (!raw) return;
+            const parsed = JSON.parse(raw);
+            let entries = parsed;
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed) && Array.isArray(parsed.entries)) {
+                entries = parsed.entries;
+                ultimoNombreCatalogo = String(parsed.nombre || '').trim();
+                catalogoUnidad = parsed.unidad || 'barcodes';
+            }
+            if (!Array.isArray(entries)) return;
+            catalogoMap = new Map(entries);
+            construirIndiceDesdeCatalogo();
+        } catch (e) { /* ignore */ }
+    }
+
+    function guardarSesionEnLS() {
+        if (!sesionPersistenciaActiva()) return;
+        guardarCatalogoEnLS();
+        try {
+            localStorage.setItem(LS_SESION, JSON.stringify({
+                inputLista: ui.inputLista ? ui.inputLista.value : '',
+                modoBusqueda: ui.modoBusqueda ? ui.modoBusqueda.value : 'titulo',
+                colAutor: !!(ui.colAutor && ui.colAutor.checked),
+                colPublicadora: !!(ui.colPublicadora && ui.colPublicadora.checked),
+                colFecha: !!(ui.colFecha && ui.colFecha.checked),
+                umbral: ui.umbral ? Number(ui.umbral.value) : 50,
+                estadoResultados,
+                catalogoNombre: ultimoNombreCatalogo || ''
+            }));
+        } catch (e) { /* ignore */ }
+    }
+
+    function persistirSesionEnLS() {
+        guardarSesionEnLS();
+    }
+
+    function persistirSesionEnLSDebounced(delayMs) {
+        if (!sesionPersistenciaActiva()) return;
+        if (timerPersistirSesion) clearTimeout(timerPersistirSesion);
+        timerPersistirSesion = setTimeout(() => {
+            timerPersistirSesion = null;
+            guardarSesionEnLS();
+        }, delayMs == null ? 400 : delayMs);
+    }
+
+    function cargarSesionDesdeLS() {
+        try {
+            const raw = localStorage.getItem(LS_SESION);
+            if (!raw) return;
+            const s = JSON.parse(raw);
+            if (!s || typeof s !== 'object') return;
+            if (ui.inputLista && s.inputLista != null) ui.inputLista.value = String(s.inputLista);
+            if (ui.modoBusqueda && s.modoBusqueda) ui.modoBusqueda.value = s.modoBusqueda;
+            if (ui.colAutor) ui.colAutor.checked = !!s.colAutor;
+            if (ui.colPublicadora) ui.colPublicadora.checked = !!s.colPublicadora;
+            if (ui.colFecha) ui.colFecha.checked = !!s.colFecha;
+            if (ui.umbral && s.umbral != null) {
+                ui.umbral.value = String(Math.max(40, Math.min(100, Number(s.umbral) || 50)));
+                ui.umbralValor.textContent = `${ui.umbral.value}%`;
+            }
+            if (s.catalogoNombre) ultimoNombreCatalogo = String(s.catalogoNombre);
+            if (s.estadoResultados && typeof s.estadoResultados === 'object') {
+                const er = s.estadoResultados;
+                estadoResultados = {
+                    pendientes: Array.isArray(er.pendientes) ? er.pendientes : [],
+                    pareados: Array.isArray(er.pareados) ? er.pareados : [],
+                    sinMatch: Array.isArray(er.sinMatch) ? er.sinMatch : [],
+                    umbral: Number(er.umbral) || 0,
+                    tieneAnalisis: !!er.tieneAnalisis
+                };
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    function crearEntradaCatalogo(opts) {
+        const titulo = String((opts && opts.titulo) || '').trim();
+        const signatura = String((opts && opts.signatura) || '').trim();
+        return {
+            titulo,
+            titulo245ab: String((opts && opts.titulo245ab) || '').trim() || recortarTituloBase(titulo),
+            autor: String((opts && opts.autor) || '').trim(),
+            casaPublicadora: String((opts && opts.casaPublicadora) || '').trim(),
+            anioPublicacion: String((opts && opts.anioPublicacion) || '').trim(),
+            signatura,
+            clasificacion999: String((opts && opts.clasificacion999) || signatura).trim(),
+            itemType999: String((opts && opts.itemType999) || '').trim(),
+            location999: String((opts && opts.location999) || '').trim(),
+            fechaCreacion999: String((opts && opts.fechaCreacion999) || '').trim(),
+            isbn: String((opts && opts.isbn) || '').trim(),
+            publicationInfo: String((opts && opts.publicationInfo) || '').trim(),
+            detalle: (opts && opts.detalle && typeof opts.detalle === 'object') ? opts.detalle : {}
+        };
+    }
+
+    function actualizarUiModoBusqueda() {
+        const modo = (ui.modoBusqueda && ui.modoBusqueda.value) || 'titulo';
+        const wrapUmbral = document.getElementById('wrapUmbral');
+        if (wrapUmbral) wrapUmbral.style.display = modo === 'barcode' ? 'none' : '';
+        if (ui.inputLista) {
+            ui.inputLista.placeholder = modo === 'barcode'
+                ? 'Pega barcodes (uno por línea o columna en Excel)...\nEjemplo:\nu173288\nu173289'
+                : 'Pega aquí la lista desde Excel (columnas en orden)...\nEjemplo solo título:\nCien anos de soledad\nEjemplo título + autor + editorial + año:\nCien anos de soledad\tGarcia Marquez, Gabriel\tSudamericana\t1967';
+        }
+    }
+
+    function actualizarEstadoCatalogo(nombre) {
+        if (catalogoMap.size === 0) {
+            ui.estadoCatalogo.textContent = 'Sin catálogo';
+        } else {
+            const etiqueta = nombre ? `${nombre} · ` : '';
+            ui.estadoCatalogo.textContent = `${etiqueta}${catalogoMap.size.toLocaleString()} ${catalogoUnidad} · ${indiceTitulos.length.toLocaleString()} títulos únicos`;
+        }
+    }
+
+    async function cargarMapaDesdeTSV(texto, nombreArchivo) {
+        await dormirFrame();
+        const lines = String(texto).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(Boolean);
+        if (!lines.length) throw new Error('Archivo vacío.');
+        setPipelineCarga(true, 12, 'Paso 1/3: Validando encabezados...');
+        const headers = lines[0].split('\t').map(v => v.trim());
+        const idxBar = buscarIndiceHeader(headers, ['Codigo de Barra', 'Barcode']);
+        const idxTitulo = buscarIndiceHeader(headers, ['Titulo', 'Title']);
+        const idxAutor = buscarIndiceHeader(headers, ['Autor', 'Author']);
+        const idxPub = buscarIndiceHeader(headers, ['Publicacion Inf', 'Publication info', 'Publisher']);
+        const idxISBN = buscarIndiceHeader(headers, ['ISBN']);
+        const idxSign = buscarIndiceHeader(headers, ['Signatura', 'Call number', 'Classification']);
+        const idxAnio = buscarIndiceHeader(headers, ['Ano', 'Año', 'Ano de publicacion', 'Año de publicacion', 'Year']);
+        if (idxBar < 0 || idxTitulo < 0) throw new Error('Faltan columnas "Codigo de Barra" y/o "Titulo".');
+
+        const nuevo = new Map();
+        setPipelineCarga(true, 38, 'Paso 2/3: Leyendo filas del catálogo...');
+        for (let i = 1; i < lines.length; i++) {
+            const cols = lines[i].split('\t');
+            const barcode = String(cols[idxBar] || '').trim();
+            if (!barcode || nuevo.has(barcode)) continue;
+            const pubRaw = String((idxPub >= 0 ? cols[idxPub] : '') || '').trim();
+            const isbnRaw = String((idxISBN >= 0 ? cols[idxISBN] : '') || '').trim();
+            nuevo.set(barcode, crearEntradaCatalogo({
+                titulo: String(cols[idxTitulo] || '').trim(),
+                autor: String((idxAutor >= 0 ? cols[idxAutor] : '') || '').trim(),
+                casaPublicadora: extraerCasaPublicadora(pubRaw),
+                anioPublicacion: String((idxAnio >= 0 ? cols[idxAnio] : '') || '').trim() || extraerAnioPublicacion(pubRaw),
+                signatura: String((idxSign >= 0 ? cols[idxSign] : '') || '').trim(),
+                isbn: extraerISBN(isbnRaw),
+                publicationInfo: pubRaw,
+                detalle: {
+                    ISBN: extraerISBN(isbnRaw),
+                    'Publication info': pubRaw,
+                    'Año publicación': String((idxAnio >= 0 ? cols[idxAnio] : '') || '').trim() || extraerAnioPublicacion(pubRaw),
+                    Signatura: String((idxSign >= 0 ? cols[idxSign] : '') || '').trim()
+                }
+            }));
+            if (i % 12000 === 0) {
+                const p = 38 + Math.floor((i / Math.max(1, lines.length - 1)) * 42);
+                setPipelineCarga(true, p, `Paso 2/3: Leyendo filas... ${i.toLocaleString()}/${(lines.length - 1).toLocaleString()}`);
+                await dormirFrame();
+            }
+        }
+        if (!nuevo.size) throw new Error('No se cargó ningún barcode.');
+        setPipelineCarga(true, 84, 'Paso 3/3: Construyendo índice de búsqueda...');
+        catalogoMap = nuevo;
+        catalogoUnidad = 'barcodes';
+        ultimoNombreCatalogo = nombreArchivo || 'TSV';
+        construirIndiceDesdeCatalogo();
+        persistirSesionEnLS();
+        actualizarEstadoCatalogo(ultimoNombreCatalogo);
+        setPipelineCarga(true, 100, `Catálogo cargado: ${nuevo.size.toLocaleString()} barcodes.`);
+        await dormirFrame();
+        setPipelineCarga(false);
+    }
+
+    async function cargarMapaDesdeExcel(arrayBuffer, nombreArchivo) {
+        setPipelineCarga(true, 10, 'Paso 1/3: Leyendo archivo Excel...');
+        await dormirFrame();
+        const wb = XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1, raw: false, defval: '' });
+        if (!rows.length) throw new Error('Excel vacío.');
+        setPipelineCarga(true, 30, 'Paso 2/3: Validando columnas y filas...');
+        const headers = rows[0].map(v => String(v || '').trim());
+        const idxBar = buscarIndiceHeader(headers, ['Codigo de Barra', 'Barcode']);
+        const idxTitulo = buscarIndiceHeader(headers, ['Titulo', 'Title']);
+        const idxAutor = buscarIndiceHeader(headers, ['Autor', 'Author']);
+        const idxPub = buscarIndiceHeader(headers, ['Publicacion Inf', 'Publication info', 'Publisher']);
+        const idxISBN = buscarIndiceHeader(headers, ['ISBN']);
+        const idxSign = buscarIndiceHeader(headers, ['Signatura', 'Call number', 'Classification']);
+        const idxAnio = buscarIndiceHeader(headers, ['Ano', 'Año', 'Ano de publicacion', 'Año de publicacion', 'Year']);
+        if (idxBar < 0 || idxTitulo < 0) throw new Error('Faltan columnas "Codigo de Barra" y/o "Titulo".');
+
+        const nuevo = new Map();
+        for (let i = 1; i < rows.length; i++) {
+            const r = rows[i];
+            if (!Array.isArray(r)) continue;
+            const barcode = String(r[idxBar] || '').trim();
+            if (!barcode || nuevo.has(barcode)) continue;
+            const pubRaw = String((idxPub >= 0 ? r[idxPub] : '') || '').trim();
+            const isbnRaw = String((idxISBN >= 0 ? r[idxISBN] : '') || '').trim();
+            nuevo.set(barcode, crearEntradaCatalogo({
+                titulo: String(r[idxTitulo] || '').trim(),
+                autor: String((idxAutor >= 0 ? r[idxAutor] : '') || '').trim(),
+                casaPublicadora: extraerCasaPublicadora(pubRaw),
+                anioPublicacion: String((idxAnio >= 0 ? r[idxAnio] : '') || '').trim() || extraerAnioPublicacion(pubRaw),
+                signatura: String((idxSign >= 0 ? r[idxSign] : '') || '').trim(),
+                isbn: extraerISBN(isbnRaw),
+                publicationInfo: pubRaw,
+                detalle: {
+                    ISBN: extraerISBN(isbnRaw),
+                    'Publication info': pubRaw,
+                    'Año publicación': String((idxAnio >= 0 ? r[idxAnio] : '') || '').trim() || extraerAnioPublicacion(pubRaw),
+                    Signatura: String((idxSign >= 0 ? r[idxSign] : '') || '').trim()
+                }
+            }));
+            if (i % 9000 === 0) {
+                const p = 30 + Math.floor((i / Math.max(1, rows.length - 1)) * 45);
+                setPipelineCarga(true, p, `Paso 2/3: Leyendo filas... ${i.toLocaleString()}/${(rows.length - 1).toLocaleString()}`);
+                await dormirFrame();
+            }
+        }
+        if (!nuevo.size) throw new Error('No se cargó ningún barcode.');
+        setPipelineCarga(true, 82, 'Paso 3/3: Construyendo índice de búsqueda...');
+        catalogoMap = nuevo;
+        catalogoUnidad = 'barcodes';
+        ultimoNombreCatalogo = nombreArchivo || 'Excel';
+        construirIndiceDesdeCatalogo();
+        persistirSesionEnLS();
+        actualizarEstadoCatalogo(ultimoNombreCatalogo);
+        setPipelineCarga(true, 100, `Catálogo cargado: ${nuevo.size.toLocaleString()} barcodes.`);
+        await dormirFrame();
+        setPipelineCarga(false);
+    }
+
+    async function cargarMapaDesdeSirsi(texto, nombreArchivo) {
+        setPipelineCarga(true, 12, 'Paso 1/3: Analizando formato Sirsi...');
+        await dormirFrame();
+        const records = symphonyTxtToRecords(texto);
+        const nuevo = new Map();
+        setPipelineCarga(true, 40, 'Paso 2/3: Extrayendo títulos y barcodes...');
+        records.forEach(r => {
+            const barcode = String(r['ID'] || '').trim();
+            if (!barcode || nuevo.has(barcode)) return;
+            const signaturaSirsi = extraerSignaturaDesdeRegistro(r);
+            nuevo.set(barcode, crearEntradaCatalogo({
+                titulo: String(r['Title'] || '').trim(),
+                autor: String(((r['Personal author'] || '') + (r['Corporate author'] ? ` | ${r['Corporate author']}` : '')).trim()),
+                casaPublicadora: extraerCasaPublicadora(r['Publication info'] || ''),
+                anioPublicacion: extraerAnioPublicacion(r['Publication info'] || ''),
+                signatura: signaturaSirsi,
+                clasificacion999: signaturaSirsi,
+                isbn: extraerISBN(r['ISBN'] || ''),
+                publicationInfo: String(r['Publication info'] || '').trim(),
+                detalle: construirDetalleSirsi(r)
+            }));
+        });
+        if (!nuevo.size) throw new Error('No se detectaron barcodes en el TXT Sirsi.');
+        setPipelineCarga(true, 84, 'Paso 3/3: Construyendo índice de búsqueda...');
+        catalogoMap = nuevo;
+        catalogoUnidad = 'barcodes';
+        ultimoNombreCatalogo = nombreArchivo || 'Sirsi TXT';
+        construirIndiceDesdeCatalogo();
+        persistirSesionEnLS();
+        actualizarEstadoCatalogo(ultimoNombreCatalogo);
+        setPipelineCarga(true, 100, `Catálogo cargado: ${nuevo.size.toLocaleString()} barcodes.`);
+        await dormirFrame();
+        setPipelineCarga(false);
+    }
+
+    function parseListaPegada(texto) {
+        const lineas = String(texto).replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n');
+        const salida = [];
+        const modo = (ui.modoBusqueda && ui.modoBusqueda.value) || 'titulo';
+        if (modo === 'barcode') {
+            lineas.forEach(line => {
+                const t = line.trim();
+                if (!t) return;
+                const bc = normalizarBarcodeBusqueda(String(line.split('\t')[0] || '').trim());
+                if (!bc) return;
+                salida.push({ titulo: bc, barcode: bc, autor: '', casaPublicadora: '', fecha: '' });
+            });
+            return salida;
+        }
+        const usarAutor = !!(ui.colAutor && ui.colAutor.checked);
+        const usarPub = !!(ui.colPublicadora && ui.colPublicadora.checked);
+        const usarFecha = !!(ui.colFecha && ui.colFecha.checked);
+        lineas.forEach(line => {
+            const t = line.trim();
+            if (!t) return;
+            const cols = t.split('\t');
+            const titulo = String(cols[0] || '').trim();
+            if (!titulo) return;
+            let idx = 1;
+            const autor = usarAutor ? String(cols[idx++] || '').trim() : '';
+            const casaPublicadora = usarPub ? String(cols[idx++] || '').trim() : '';
+            const fechaRaw = usarFecha ? String(cols[idx++] || '').trim() : '';
+            const fecha = usarFecha ? (normalizarAnio4(fechaRaw) || fechaRaw) : '';
+            salida.push({ titulo: recortarTituloBase(titulo), autor, casaPublicadora, fecha });
+        });
+        return salida;
+    }
+
+    function etiquetaSimilitud(score) {
+        if (score >= 0.9) return ['Muy alta', 's-ok'];
+        if (score >= 0.8) return ['Alta', 's-ok'];
+        if (score >= 0.7) return ['Media', 's-mid'];
+        if (score > 0) return ['Baja', 's-low'];
+        return ['Sin match', 's-none'];
+    }
+
+    function topAlternativas(items, max = 5) {
+        const arr = Array.isArray(items) ? items.slice() : [];
+        arr.sort((a, b) => b.score - a.score);
+        return arr.slice(0, max);
+    }
+
+    function parsePrecioNumero(raw) {
+        const s = String(raw || '').trim();
+        if (!s) return null;
+        let n = s.replace(/\$/g, '').replace(/\s+/g, '');
+        // Soporta 1,234.56 y también 1234,56
+        if (n.includes(',') && n.includes('.')) n = n.replace(/,/g, '');
+        else if (n.includes(',') && !n.includes('.')) n = n.replace(',', '.');
+        const val = Number(n);
+        return Number.isFinite(val) ? val : null;
+    }
+
+    function extraerCasaPublicadora(publicationInfoRaw) {
+        const txt = String(publicationInfoRaw || '').trim();
+        if (!txt) return '';
+        const idxColon = txt.indexOf(':');
+        if (idxColon < 0) return '';
+        const despuesColon = txt.slice(idxColon + 1).trim();
+        const idxComa = despuesColon.indexOf(',');
+        return (idxComa >= 0 ? despuesColon.slice(0, idxComa) : despuesColon).trim();
+    }
+
+    function extraerAnioPublicacion(publicationInfoRaw) {
+        return extraerUltimosCuatroDigitosAnio(publicationInfoRaw);
+    }
+
+    /** Últimos cuatro dígitos de año (17xx–20xx) en un texto (p. ej. 264$c o 264$a). */
+    function extraerUltimosCuatroDigitosAnio(text) {
+        const m = String(text || '').match(/\b(17|18|19|20)\d{2}\b/g);
+        return m && m.length ? m[m.length - 1] : '';
+    }
+
+    function normalizarAnio4(raw) {
+        return extraerUltimosCuatroDigitosAnio(raw);
+    }
+
+    // —— Lectura MARC21 (.mrc Unicode), adaptado del Metabuscador ——
+    const MARC_RS = 0x1d;
+
+    function mapMarcRecords(buf) {
+        const pointers = [];
+        let start = 0;
+        for (let i = 0; i < buf.length; i++) {
+            if (buf[i] === MARC_RS) {
+                pointers.push([start, i]);
+                start = i + 1;
+            }
+        }
+        if (start < buf.length) pointers.push([start, buf.length]);
+        return pointers;
+    }
+
+    function marcVariableRest(raw, tag) {
+        const tn = parseInt(tag, 10);
+        if (!Number.isFinite(tn) || tn <= 9) return raw || '';
+        return raw.length >= 2 ? raw.slice(2) : '';
+    }
+
+    function parseMarcSubfields(rest) {
+        const out = {};
+        if (!rest) return out;
+        rest.split('\x1F').forEach(part => {
+            if (part.length < 2) return;
+            const code = String(part[0] || '').toLowerCase();
+            const val = part.slice(1).trim();
+            if (out[code]) out[code] = (out[code] + '\n' + val).trim();
+            else out[code] = val;
+        });
+        return out;
+    }
+
+    function parseMarcRecordFields(recordUint8) {
+        const decoder = new TextDecoder('utf-8', { fatal: false });
+        const list = [];
+        if (recordUint8.length < 24) return list;
+        const baseAddr = parseInt(new TextDecoder('ascii').decode(recordUint8.slice(12, 17)), 10);
+        if (!Number.isFinite(baseAddr) || baseAddr <= 24 || baseAddr > recordUint8.length) return list;
+        const directory = new TextDecoder('ascii').decode(recordUint8.slice(24, baseAddr - 1));
+        const dataBytes = recordUint8.slice(baseAddr);
+        for (let i = 0; i < directory.length; i += 12) {
+            const tag = directory.substring(i, i + 3);
+            const fLen = parseInt(directory.substring(i + 3, i + 7), 10);
+            const fStart = parseInt(directory.substring(i + 7, i + 12), 10);
+            if (!Number.isFinite(fLen) || !Number.isFinite(fStart)) continue;
+            const contentBytes = dataBytes.slice(fStart, fStart + fLen - 1);
+            const raw = decoder.decode(contentBytes);
+            const tn = parseInt(tag, 10);
+            let ind = '';
+            let rest = raw;
+            if (Number.isFinite(tn) && tn > 9 && raw.length >= 2) {
+                ind = raw.slice(0, 2).replace(/ /g, '\\');
+                rest = marcVariableRest(raw, tag);
+            }
+            list.push({ tag, ind, raw, rest, sf: tn > 9 ? parseMarcSubfields(rest) : {} });
+        }
+        return list;
+    }
+
+    function marcJoin245(sf) {
+        const parts = [sf.a, sf.b, sf.c].filter(Boolean);
+        return parts.join(' ').replace(/\s+/g, ' ').trim().replace(/[\/=:]\s*$/, '');
+    }
+
+    /** Título 245 solo $a y $b (sin mención de responsabilidad $c). */
+    function marcJoin245ab(sf) {
+        if (!sf) return '';
+        return [sf.a, sf.b].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+    }
+
+    function normalizarBarcodeBusqueda(raw) {
+        return String(raw || '').replace(/\ufeff/g, '').trim();
+    }
+
+    function resolverBarcodeEnCatalogo(raw) {
+        const q = normalizarBarcodeBusqueda(raw);
+        if (!q) return null;
+        if (catalogoMap.has(q)) {
+            return { meta: catalogoMap.get(q), barcodeKey: q };
+        }
+        return null;
+    }
+
+    function marcAuthorFrom(sf) {
+        if (!sf) return '';
+        return [sf.a, sf.b].filter(Boolean).join(' — ').replace(/\s+/g, ' ').trim();
+    }
+
+    function marcStripNoise(s) {
+        return String(s || '')
+            .replace(/\ufeff/g, '')
+            .replace(/\u00a0/g, ' ')
+            .replace(/[\x1c-\x1f]/g, '')
+            .trim();
+    }
+
+    /** Casa publicadora: 264$d (oficial), a veces $b o $a; también 260. */
+    function extraerCasaPublicadoraMarc(fields) {
+        const tags = ['264', '260'];
+        const codes = ['d', 'b', 'a'];
+        for (let t = 0; t < tags.length; t++) {
+            const tag = tags[t];
+            for (let i = 0; i < fields.length; i++) {
+                if (fields[i].tag !== tag) continue;
+                const sf = fields[i].sf || {};
+                for (let c = 0; c < codes.length; c++) {
+                    const v = marcStripNoise(sf[codes[c]]);
+                    if (!v) continue;
+                    if (/^\d{4}$/.test(v) && extraerUltimosCuatroDigitosAnio(v) === v) continue;
+                    return v.replace(/,+\s*$/g, '').trim();
+                }
+            }
+        }
+        return '';
+    }
+
+    /** Barcodes / ejemplares locales: campo 999 subcampo $i (Item ID). */
+    function extractMarc999Holdings(fields) {
+        const out = [];
+        for (let i = 0; i < fields.length; i++) {
+            if (fields[i].tag !== '999') continue;
+            const sf = fields[i].sf || {};
+            const barcode = marcStripNoise(sf.i);
+            if (!barcode) continue;
+            const sigA = marcStripNoise(sf.a);
+            const sigC = sf.c != null && String(sf.c).trim() !== '' ? `c.${String(sf.c).trim()}` : '';
+            const signatura = [sigA, sigC].filter(Boolean).join(' ').replace(/\s+/g, ' ').trim();
+            out.push({
+                barcode,
+                signatura,
+                clasificacion999: marcStripNoise(sf.a),
+                itemType999: marcStripNoise(sf.t),
+                location999: marcStripNoise(sf.l),
+                fechaCreacion999: marcStripNoise(sf.u)
+            });
+        }
+        return out;
+    }
+
+    /** Año: 264$c (habitual), a veces $a; luego 260$c y 008. */
+    function extraerAnioMarc(fields) {
+        const tagCodes = [
+            ['264', 'c'], ['264', 'a'],
+            ['260', 'c'], ['260', 'a']
+        ];
+        for (let i = 0; i < tagCodes.length; i++) {
+            const tag = tagCodes[i][0];
+            const code = tagCodes[i][1];
+            for (let j = 0; j < fields.length; j++) {
+                if (fields[j].tag !== tag) continue;
+                const v = fields[j].sf && fields[j].sf[code] ? fields[j].sf[code] : '';
+                const y = extraerUltimosCuatroDigitosAnio(v);
+                if (y) return y;
+            }
+        }
+        const f008 = fields.find(x => x.tag === '008');
+        if (f008) {
+            const s = String(f008.raw || '').trim();
+            if (s.length >= 11) {
+                const d1 = s.slice(7, 11);
+                if (/^\d{4}$/.test(d1) && d1 !== 'uuuu') return d1;
+            }
+        }
+        return '';
+    }
+
+    function buildMarcBibMeta(fields) {
+        const rf = fields.filter(f => f.tag === '245')[0];
+        const f245 = (rf && rf.sf) ? rf.sf : {};
+        const fa = fields.filter(f => f.tag === '100')[0];
+        const fb = fields.filter(f => f.tag === '110')[0];
+        const fc = fields.filter(f => f.tag === '111')[0];
+        let autor = marcAuthorFrom(fa && fa.sf ? fa.sf : null);
+        if (!autor) autor = marcAuthorFrom(fb && fb.sf ? fb.sf : null);
+        if (!autor) autor = marcAuthorFrom(fc && fc.sf ? fc.sf : null);
+        const anio = extraerAnioMarc(fields);
+        const editorial = extraerCasaPublicadoraMarc(fields);
+        let isbn = '';
+        for (let i = 0; i < fields.length; i++) {
+            if (fields[i].tag !== '020') continue;
+            const a = fields[i].sf && fields[i].sf.a;
+            if (a && String(a).trim()) { isbn = marcStripNoise(a); break; }
+        }
+        const pubInfo = [editorial, anio].filter(Boolean).join(', ');
+        return {
+            titulo: marcJoin245(f245) || '',
+            titulo245ab: marcJoin245ab(f245) || '',
+            autor,
+            casaPublicadora: editorial,
+            anioPublicacion: anio,
+            isbn,
+            publicationInfo: pubInfo
+        };
+    }
+
+    async function cargarMapaDesdeMrc(arrayBuffer, nombreArchivo) {
+        setPipelineCarga(true, 5, 'Paso 1/3: Leyendo archivo MARC (.mrc)...');
+        await dormirFrame();
+        const buf = new Uint8Array(arrayBuffer);
+        const pointers = mapMarcRecords(buf);
+        if (!pointers.length) throw new Error('No se encontraron registros en el .mrc.');
+        const nuevo = new Map();
+        const total = pointers.length;
+        const batch = Math.max(80, Math.min(400, Math.floor(total / 80) || 200));
+        setPipelineCarga(true, 18, `Paso 2/3: Extrayendo metadatos de ${total.toLocaleString()} registros...`);
+        for (let ri = 0; ri < total; ri++) {
+            const pair = pointers[ri];
+            if (pair[1] <= pair[0]) continue;
+            let fields;
+            try {
+                fields = parseMarcRecordFields(buf.slice(pair[0], pair[1]));
+            } catch (e) { continue; }
+            const bib = buildMarcBibMeta(fields);
+            const titulo = recortarTituloBase(String(bib.titulo || '').trim());
+            if (!titulo) continue;
+            const holdings = extractMarc999Holdings(fields);
+            if (!holdings.length) continue;
+            const autorMarc = recortarAutorCatalogoMarc(bib.autor);
+            for (let hi = 0; hi < holdings.length; hi++) {
+                const h = holdings[hi];
+                let id = h.barcode;
+                if (nuevo.has(id)) {
+                    let n = 2;
+                    while (nuevo.has(`${id}#${n}`)) n++;
+                    id = `${id}#${n}`;
+                }
+                nuevo.set(id, {
+                    titulo,
+                    titulo245ab: bib.titulo245ab || titulo,
+                    autor: autorMarc || bib.autor,
+                    casaPublicadora: bib.casaPublicadora,
+                    anioPublicacion: bib.anioPublicacion,
+                    signatura: h.signatura || '',
+                    clasificacion999: h.clasificacion999 || '',
+                    itemType999: h.itemType999 || '',
+                    location999: h.location999 || '',
+                    fechaCreacion999: h.fechaCreacion999 || '',
+                    isbn: bib.isbn,
+                    publicationInfo: bib.publicationInfo,
+                    detalle: bib.isbn ? { ISBN: bib.isbn } : {}
+                });
+            }
+            if (ri % batch === 0 || ri === total - 1) {
+                const p = 18 + Math.floor(((ri + 1) / total) * 62);
+                setPipelineCarga(true, p, `Paso 2/3: Registros… ${(ri + 1).toLocaleString()}/${total.toLocaleString()}`);
+                await dormirFrame();
+            }
+        }
+        if (!nuevo.size) throw new Error('Ningún registro MARC tenía título en 245 y barcode en 999$i.');
+        setPipelineCarga(true, 84, 'Paso 3/3: Construyendo índice de búsqueda...');
+        catalogoMap = nuevo;
+        catalogoUnidad = 'barcodes';
+        ultimoNombreCatalogo = nombreArchivo || 'MRC';
+        construirIndiceDesdeCatalogo();
+        persistirSesionEnLS();
+        actualizarEstadoCatalogo(ultimoNombreCatalogo);
+        setPipelineCarga(true, 100, `Catálogo MRC: ${nuevo.size.toLocaleString()} barcodes (999$i) indexados.`);
+        await dormirFrame();
+        setPipelineCarga(false);
+    }
+
+    function extraerISBN(raw) {
+        const txt = String(raw || '').trim();
+        if (!txt) return '';
+        const m = txt.match(/(?:97[89][\d\- ]{10,}|[\dXx\- ]{9,17})/);
+        return m ? m[0].replace(/\s+/g, ' ').trim() : txt;
+    }
+
+    function extraerSignaturaDesdeRegistro(r) {
+        const keys = ['Call number', 'Signatura', 'Classification', 'Class number', 'Item call number', 'LC call number'];
+        for (let i = 0; i < keys.length; i++) {
+            const v = String((r && r[keys[i]]) || '').trim();
+            if (v) return v;
+        }
+        return '';
+    }
+
+    function construirDetalleSirsi(r) {
+        if (!r || typeof r !== 'object') return {};
+        const permitidos = new Set([
+            'ISBN', 'Title', 'Personal author', 'Corporate author', 'Edition',
+            'Publication info', 'Series', 'Contents', 'Physical description',
+            'General note', 'Local note', 'Abstract', 'Subject', 'Personal subject',
+            'ID', 'Home Location', 'Current Location', 'Call number', 'Signatura'
+        ]);
+        const detalle = {};
+        Object.keys(r).forEach(k => {
+            if (!permitidos.has(k)) return;
+            const v = String(r[k] || '').trim();
+            if (v) detalle[k] = v;
+        });
+        return detalle;
+    }
+
+    function limpiarPublicadora(raw) {
+        let s = String(raw || '').trim();
+        if (!s) return '';
+        s = s
+            .replace(/[|\\][a-z]/gi, ' ')   // quita subcampos tipo |b, \b, |c
+            .replace(/[\[\]\?]/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+        return s;
+    }
+
+    function scoreCampoTexto(inputRaw, catalogoRaw, normalizer) {
+        const a = normalizer(String(inputRaw || '').trim());
+        const b = normalizer(String(catalogoRaw || '').trim());
+        if (!a) return null; // si usuario no proveyó campo, no evaluar
+        if (!b) return 0;
+        const at = tokenizar(a);
+        const bt = tokenizar(b);
+        return similitudCompuesta(a, b, at, bt);
+    }
+
+    function esVisibleColumna(nombre) {
+        if (nombre === 'autorLista') return !!(ui.colAutor && ui.colAutor.checked);
+        if (nombre === 'pubLista') return !!(ui.colPublicadora && ui.colPublicadora.checked);
+        if (nombre === 'fechaLista') return !!(ui.colFecha && ui.colFecha.checked);
+        return true;
+    }
+
+    function actualizarVisibilidadColumnas() {
+        const cols = ['autorLista', 'pubLista', 'fechaLista'];
+        cols.forEach(col => {
+            const visible = esVisibleColumna(col);
+            document.querySelectorAll(`[data-col="${col}"]`).forEach(el => {
+                el.style.display = visible ? '' : 'none';
+            });
+        });
+    }
+
+    function esMatchTituloTriage(r) {
+        return !!(r && r.buscado && Array.isArray(r.candidatos));
+    }
+
+    function cloneTituloMatchRow(r) {
+        try { return JSON.parse(JSON.stringify(r)); } catch (e) { return r; }
+    }
+
+    function candidatoPreferidoParaOrden(r) {
+        if (!esMatchTituloTriage(r)) return null;
+        if (r.estadoRevision === 'confirmado' && r.pareoSeleccionado) return r.pareoSeleccionado;
+        return (r.candidatos && r.candidatos.length) ? r.candidatos[0] : null;
+    }
+
+    function enriquecerCandidatoConMeta(cand, buscado) {
+        const barcodeRef = cand && cand.barcodes && cand.barcodes.length ? String(cand.barcodes[0]).trim() : '';
+        const metaRef = barcodeRef ? (catalogoMap.get(barcodeRef) || {}) : {};
+        const bd = buscado || {};
+        const autorFull = String(metaRef.autor || '').trim();
+        const autorMarc = recortarAutorCatalogoMarc(autorFull);
+        const autorParaMatch = autorMarc || autorFull;
+        return {
+            tituloCatalogo: cand.tituloCatalogo,
+            norm: cand.norm,
+            score: cand.score,
+            barcodes: Array.isArray(cand.barcodes) ? cand.barcodes.slice() : [],
+            esExacto: !!cand.esExacto,
+            autorCatalogo: autorMarc || autorFull,
+            casaPublicadora: String(metaRef.casaPublicadora || ''),
+            anioCatalogo: String(metaRef.anioPublicacion || extraerAnioPublicacion(metaRef.publicationInfo || '') || ''),
+            scoreAutor: scoreCampoTexto(bd.autor, autorParaMatch, normalizarAutor),
+            scorePublicadora: scoreCampoTexto(bd.casaPublicadora, metaRef.casaPublicadora, s => normalizarTitulo(limpiarPublicadora(s))),
+            scoreFecha: scoreAnioPublicacion(bd.fecha, metaRef.anioPublicacion || extraerAnioPublicacion(metaRef.publicationInfo || '')),
+            registroTxt: cand.esExacto ? 'Mismo registro (título exacto normalizado)' : 'Posible registro distinto'
+        };
+    }
+
+    async function analizar() {
+        if (analizando) return;
+        analizando = true;
+        ui.estadoProceso.textContent = '';
+        if (ui.tablaPendientesBody) ui.tablaPendientesBody.innerHTML = '';
+        if (ui.tablaPareadosBody) ui.tablaPareadosBody.innerHTML = '';
+        ui.tablaNoMatchBody.innerHTML = '';
+        const umbral = Number(ui.umbral.value) / 100;
+        estadoResultados = { pendientes: [], pareados: [], sinMatch: [], umbral, tieneAnalisis: false };
+        renderResultados();
+        try {
+            if (!catalogoMap.size) {
+                ui.estadoProceso.textContent = 'Primero carga un catálogo del sistema.';
+                return;
+            }
+
+            const items = parseListaPegada(ui.inputLista.value);
+            if (!items.length) {
+                const modoVacio = (ui.modoBusqueda && ui.modoBusqueda.value) || 'titulo';
+                ui.estadoProceso.textContent = modoVacio === 'barcode'
+                    ? 'No hay barcodes para analizar.'
+                    : 'No hay títulos para analizar.';
+                return;
+            }
+
+            const modo = (ui.modoBusqueda && ui.modoBusqueda.value) || 'titulo';
+            let matches = [];
+            let noMatches = [];
+            setPipelineAnalisis(true, 0, `Preparando análisis de ${items.length.toLocaleString()} títulos...`);
+
+            if (modo === 'publicadora') {
+                const byPub = buscarPorPublicadora(items);
+                matches = byPub.matches;
+                noMatches = byPub.noMatches;
+                ui.estadoProceso.textContent = `Completado: ${items.length} entradas analizadas por casa publicadora.`;
+                setPipelineAnalisis(true, 100, `Completado: ${matches.length.toLocaleString()} registros encontrados.`);
+                await dormirFrame();
+                setPipelineAnalisis(false);
+                estadoResultados = { pendientes: matches, pareados: [], sinMatch: noMatches, umbral, tieneAnalisis: true };
+                renderResultados();
+                persistirSesionEnLS();
+                return;
+            }
+
+            if (modo === 'barcode') {
+                const byBc = buscarPorBarcode(items);
+                matches = byBc.matches;
+                noMatches = byBc.noMatches;
+                ui.estadoProceso.textContent = `Completado: ${items.length} barcodes · ${matches.length} encontrados · ${noMatches.length} sin coincidencia exacta.`;
+                setPipelineAnalisis(true, 100, `Completado: ${matches.length.toLocaleString()} matches exactos.`);
+                await dormirFrame();
+                setPipelineAnalisis(false);
+                estadoResultados = { pendientes: matches, pareados: [], sinMatch: noMatches, umbral, tieneAnalisis: true };
+                renderResultados();
+                persistirSesionEnLS();
+                return;
+            }
+
+            for (let i = 0; i < items.length; i++) {
+                const item = items[i];
+                const qNorm = normalizarTitulo(recortarTituloBase(item.titulo));
+                const qTokens = tokenizar(qNorm);
+                const posiblesMatches = [];
+
+                const exacto = indicePorNorm.get(qNorm);
+                if (exacto) {
+                    posiblesMatches.push({
+                        tituloCatalogo: exacto.original,
+                        norm: exacto.norm,
+                        score: 1,
+                        barcodes: Array.from(exacto.barcodes || []),
+                        esExacto: true
+                    });
+                }
+
+                const universo = armarCandidatos(qNorm, qTokens);
+                for (let j = 0; j < universo.length; j++) {
+                    const cand = universo[j];
+                    if (exacto && cand.norm === exacto.norm) continue;
+
+                    const score = similitudCompuesta(qNorm, cand.norm, qTokens, cand.tokens);
+
+                    if (score >= umbral) {
+                        posiblesMatches.push({
+                            tituloCatalogo: cand.original,
+                            norm: cand.norm,
+                            score,
+                            barcodes: Array.from(cand.barcodes || []),
+                            esExacto: false
+                        });
+                    }
+                }
+
+                posiblesMatches.sort((a, b) => b.score - a.score);
+
+                if (posiblesMatches.length === 0) {
+                    noMatches.push({ ...item });
+                } else {
+                    matches.push({
+                        buscado: { titulo: item.titulo, autor: item.autor, casaPublicadora: item.casaPublicadora, fecha: item.fecha },
+                        cantidadMatches: posiblesMatches.length,
+                        candidatos: posiblesMatches,
+                        estadoRevision: 'pendiente',
+                        pareoSeleccionado: null
+                    });
+                }
+
+                if (i % 8 === 0) {
+                    ui.estadoProceso.textContent = `Analizando ${i + 1}/${items.length}...`;
+                    const pct = Math.floor(((i + 1) / items.length) * 100);
+                    setPipelineAnalisis(true, pct, `Analizando ${(i + 1).toLocaleString()}/${items.length.toLocaleString()} (${pct}%)`);
+                    await dormirFrame();
+                }
+            }
+
+            ui.estadoProceso.textContent = `Completado: ${items.length} títulos analizados.`;
+            setPipelineAnalisis(true, 100, `Completado: ${items.length.toLocaleString()} títulos analizados.`);
+            await dormirFrame();
+            setPipelineAnalisis(false);
+            estadoResultados = { pendientes: matches, pareados: [], sinMatch: noMatches, umbral, tieneAnalisis: true };
+            renderResultados();
+            persistirSesionEnLS();
+        } catch (err) {
+            setPipelineAnalisis(false);
+            ui.estadoProceso.textContent = `Error en análisis: ${(err && err.message) || 'desconocido'}`;
+        } finally {
+            analizando = false;
+        }
+    }
+
+    function renderFilaMatchTituloTriage(row, idx, colspanMatch, mostrarAutorLista, mostrarPubLista, mostrarFecha, umbral, seccion) {
+        const confirmado = row.estadoRevision === 'confirmado';
+        const enPareados = seccion === 'pareados';
+        const b = row.buscado || {};
+        const nCand = row.cantidadMatches || ((row.candidatos && row.candidatos.length) || 0);
+        let claseTr = confirmado ? 'match-triage match-triage--hecho' : 'match-triage';
+        if (enPareados) claseTr += ' ficha-pareada';
+
+        let filasLista = '';
+        if (mostrarAutorLista) filasLista += `<div><strong>Autor lista:</strong> ${escapeHtml(b.autor || '')}</div>`;
+        if (mostrarPubLista) filasLista += `<div><strong>Casa pub. lista:</strong> ${escapeHtml(b.casaPublicadora || '')}</div>`;
+        if (mostrarFecha) filasLista += `<div><strong>Fecha lista:</strong> ${escapeHtml(b.fecha || '')}</div>`;
+
+        const badgeCand = `<span class="badge s-mid">${nCand} posible${nCand !== 1 ? 's' : ''} (≥ ${Math.round(umbral * 100)}%)</span>`;
+        const badgeOk = `<span class="badge s-ok">Pareado ✓</span>`;
+
+        let resumenPareo = '';
+        if (confirmado && row.pareoSeleccionado) {
+            const p = row.pareoSeleccionado;
+            const bc = (p.barcodes || []).slice(0, 8).map(c =>
+                `<span class="barcode-link" data-barcode="${escapeHtml(c)}">${escapeHtml(c)}</span>`
+            ).join(', ') || '—';
+            const masBc = (p.barcodes || []).length > 8 ? ` …(+${p.barcodes.length - 8})` : '';
+            resumenPareo = `
+                <div style="margin-top:10px; padding:12px 14px; background:#ecfdf5; border-radius:8px; font-size:.84rem; border:1px solid #a7f3d0;">
+                    <strong>${escapeHtml(p.tituloCatalogo || '')}</strong>
+                    <div class="cand-metrics-row" style="border-top-color:#86efac; margin-top:10px;">
+                        <span><strong>Match Título:</strong> ${htmlSpanPctTitulo(p.score)}</span>
+                        <span class="muted">|</span>
+                        <span><strong>Match Autor:</strong> ${htmlSpanPctAutor(p.scoreAutor)}</span>
+                        <span class="muted">|</span>
+                        <span><strong>Match Publicadora:</strong> ${htmlSpanPctOpcional(p.scorePublicadora)}</span>
+                        <span class="muted">|</span>
+                        <span><strong>Match Fecha:</strong> ${htmlSpanPctOpcional(p.scoreFecha)}</span>
+                    </div>
+                    <div class="cand-meta-row" style="color:#334155;">
+                        <strong>Autor cat.:</strong> ${escapeHtml(p.autorCatalogo || '—')} <span class="muted">|</span> <strong>Casa pub.:</strong> ${escapeHtml(p.casaPublicadora || '—')} <span class="muted">|</span> <strong>Año cat.:</strong> ${escapeHtml(p.anioCatalogo || '—')}${b.fecha ? ` <span class="muted">(lista: ${escapeHtml(b.fecha)})</span>` : ''}
+                    </div>
+                    <div class="cand-barcodes-row"><strong>Barcodes:</strong> ${bc}${masBc}</div>
+                </div>`;
+        }
+
+        const candidatosInner = (row.candidatos || []).map((cand, ci) => {
+            const enr = enriquecerCandidatoConMeta(cand, b);
+            const codigosSnippet = (enr.barcodes || []).slice(0, 6).map(code =>
+                `<span class="barcode-link" data-barcode="${escapeHtml(code)}">${escapeHtml(code)}</span>`
+            ).join(', ');
+            const badgeExacto = cand.esExacto ? '<span class="badge badge-exact">Exacto</span>' : '';
+            const btnPare = (confirmado || enPareados)
+                ? '<span class="muted" style="font-size:.74rem;">—</span>'
+                : `<button type="button" class="btn-mini btn-mini-ok" data-action="confirmar-candidato" data-seccion="${seccion}" data-idx="${idx}" data-candidato-idx="${ci}">Parear con este</button>`;
+
+            return `<div class="match-triage-cand">
+                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; gap:10px; align-items:flex-start;">
+                    <div style="flex:1; min-width:0;">
+                        <strong class="cand-tit-catalogo">${escapeHtml(enr.tituloCatalogo || '')}</strong>
+                    </div>
+                    <div class="cand-acciones-top">${(confirmado || enPareados) ? '<span class="muted">—</span>' : `${btnPare} ${badgeExacto}`}</div>
+                </div>
+                <div class="cand-metrics-row">
+                    <span><strong>Match Título:</strong> ${htmlSpanPctTitulo(enr.score)}</span>
+                    <span class="muted">|</span>
+                    <span><strong>Match Autor:</strong> ${htmlSpanPctAutor(enr.scoreAutor)}</span>
+                    <span class="muted">|</span>
+                    <span><strong>Match Publicadora:</strong> ${htmlSpanPctOpcional(enr.scorePublicadora)}</span>
+                    <span class="muted">|</span>
+                    <span><strong>Match Fecha:</strong> ${htmlSpanPctOpcional(enr.scoreFecha)}</span>
+                </div>
+                <div class="cand-meta-row">
+                    <strong>Autor cat.:</strong> ${escapeHtml(enr.autorCatalogo || '—')} <span class="muted">|</span> <strong>Casa pub.:</strong> ${escapeHtml(enr.casaPublicadora || '—')} <span class="muted">|</span> <strong>Año cat.:</strong> ${escapeHtml(enr.anioCatalogo || '—')}${mostrarFecha && b.fecha ? ` <span class="muted">(lista: ${escapeHtml(b.fecha)})</span>` : ''}
+                </div>
+                <div class="cand-barcodes-row"><strong>Barcodes:</strong> ${codigosSnippet || '—'}${(enr.barcodes || []).length > 6 ? ` …(+${enr.barcodes.length - 6})` : ''}</div>
+            </div>`;
+        }).join('');
+
+        const abiertoAttr = confirmado ? '' : ' open';
+        const htmlDetails = `
+            <details class="details-triage"${abiertoAttr}>
+                <summary>Ver opciones del catálogo (${nCand})</summary>
+                ${candidatosInner}
+            </details>
+        `;
+
+        return `<tr class="${claseTr}">
+            <td style="vertical-align:top;">${idx + 1}</td>
+            <td colspan="${colspanMatch - 1}">
+                <div class="match-triage-card">
+                    <div class="match-triage-head">
+                        <div class="match-triage-busqueda">
+                            <strong class="match-triage-titulo-busqueda">${escapeHtml(b.titulo || '')}</strong>
+                            ${filasLista ? `<div style="margin-top:8px;font-size:.82rem;">${filasLista}</div>`
+                : '<div class="muted" style="font-size:.76rem;margin-top:6px;">Solo título pegado · Marca autor / editorial / fecha arriba para ver más columnas.</div>'}
+                        </div>
+                        <div class="match-triage-acciones">
+                            ${confirmado ? badgeOk : badgeCand}
+                            ${(!enPareados) ? `<button type="button" class="btn-mini btn-mini-danger" data-action="mover-no-match" data-seccion="${seccion}" data-idx="${idx}">No es match</button>` : ''}
+                        </div>
+                    </div>
+                    ${confirmado ? resumenPareo : htmlDetails}
+                </div>
+            </td>
+        </tr>`;
+    }
+
+    function renderFilaLegacyMatch(r, idx, mostrarAutorLista, mostrarPubLista, mostrarFecha, seccion) {
+        const enPareados = seccion === 'pareados';
+        const confirmado = r.estadoRevision === 'confirmado';
+        const [etq, clase] = confirmado ? ['', 's-none'] : etiquetaSimilitud(r.score);
+        const scoreAutorTxt = r.scoreAutor === null || r.scoreAutor === undefined ? '—' : `${Math.round((r.scoreAutor || 0) * 100)}%`;
+        const scorePubTxt = r.scorePublicadora === null || r.scorePublicadora === undefined ? '—' : `${Math.round((r.scorePublicadora || 0) * 100)}%`;
+        const scoreFechaTxt = r.scoreFecha === null || r.scoreFecha === undefined ? '—' : `${Math.round((r.scoreFecha || 0) * 100)}%`;
+        const codigos = (r.codigos || []).slice(0, 8).map(code =>
+            `<span class="barcode-link" data-barcode="${escapeHtml(code)}">${escapeHtml(code)}</span>`
+        ).join(', ');
+        const codigosHtml = (r.codigos || []).length > 8 ? `${codigos} ... (+${(r.codigos || []).length - 8})` : (codigos || '—');
+        const alternativas = Array.isArray(r.alternativas) ? r.alternativas : [];
+        const htmlAlternativas = alternativas.length === 0
+            ? '<span class="muted">—</span>'
+            : `<details><summary>Ver ${alternativas.length}</summary>${alternativas.map(a => {
+                const cs = a.codigos && a.codigos.length ? a.codigos.join(', ') : '—';
+                const altIdx = alternativas.indexOf(a);
+                return `<div style="margin-top:6px; font-size:.76rem;">
+                            <strong>${escapeHtml(a.titulo)}</strong><br>
+                            ${Math.round(a.score * 100)}% · ${escapeHtml(cs)}<br>
+                            Autor: ${escapeHtml(a.autorCatalogo || '—')}<br>
+                            <button class="btn-mini btn-mini-ok" data-action="usar-alt-correcto" data-seccion="${seccion}" data-idx="${idx}" data-alt-idx="${altIdx}" style="margin-top:4px;">Escoger como correcto</button>
+                        </div>`;
+            }).join('')}</details>`;
+        const btnCorrecto = enPareados
+            ? `<span class="badge s-ok" style="white-space:nowrap;">Listo</span>`
+            : `<button class="btn-mini ${confirmado ? 'btn-mini-success' : 'btn-mini-ok'}" data-action="confirmar" data-seccion="${seccion}" data-idx="${idx}">Correcto</button>`;
+        const btnNoMatch = enPareados
+            ? ''
+            : `<button class="btn-mini ${confirmado ? 'btn-mini-muted' : 'btn-mini-danger'}" data-action="mover-no-match" data-seccion="${seccion}" data-idx="${idx}">No es match</button>`;
+        return `<tr class="${enPareados ? 'ficha-pareada' : ''}">
+                    <td>${idx + 1}</td>
+                    <td>${btnCorrecto}</td>
+                    <td>${btnNoMatch}</td>
+                    <td>${escapeHtml(r.titulo)}</td>
+                    <td>${escapeHtml(r.tituloSistema)}</td>
+                    <td data-col="autorLista">${mostrarAutorLista ? escapeHtml(r.autor || '') : ''}</td>
+                    <td>${escapeHtml(r.autorCatalogo || '')}</td>
+                    <td data-col="pubLista">${mostrarPubLista ? escapeHtml(r.casaPublicadoraInput || '') : ''}</td>
+                    <td>${escapeHtml(r.casaPublicadora || '')}</td>
+                    <td data-col="fechaLista">${mostrarFecha ? escapeHtml(r.fecha || '') : ''}</td>
+                    <td>
+                        <span class="badge ${confirmado ? 's-ok' : clase}">${confirmado ? '100% · Correcto' : `${Math.round(r.score * 100)}% · ${etq}`}</span>
+                    </td>
+                    <td>${scoreAutorTxt}</td>
+                    <td>${scorePubTxt}</td>
+                    <td>${scoreFechaTxt}</td>
+                    <td>${htmlAlternativas}</td>
+                    <td>${codigosHtml}</td>
+                    <td>${escapeHtml(r.registroTxt)}</td>
+                </tr>`;
+    }
+
+    function pintarListaMatchEnTbody(rows, seccionKey, tieneAnalisis) {
+        const mostrarAutorLista = esVisibleColumna('autorLista');
+        const mostrarPubLista = esVisibleColumna('pubLista');
+        const mostrarFecha = esVisibleColumna('fechaLista');
+        const colsOcultas = (mostrarAutorLista ? 0 : 1) + (mostrarPubLista ? 0 : 1) + (mostrarFecha ? 0 : 1);
+        const colspanMatch = 17 - colsOcultas;
+        const umbral = estadoResultados.umbral || 0;
+        const tbody = seccionKey === 'pareados' ? ui.tablaPareadosBody : ui.tablaPendientesBody;
+        if (!tbody) return;
+
+        let vacioMsj = '';
+        if (!tieneAnalisis) vacioMsj = 'Ejecuta el análisis para poblar esta sección.';
+        else if (seccionKey === 'pendientes') vacioMsj = 'Sin ítems pendientes (todo revisado).';
+        else vacioMsj = 'Sin pareados aún. Pulsa «Parear con este» o «Correcto».';
+        const htmlVacía = `<tr><td colspan="${colspanMatch}" class="muted">${vacioMsj}</td></tr>`;
+
+        if (!rows.length) {
+            tbody.innerHTML = htmlVacía;
+            return;
+        }
+        tbody.innerHTML = rows.map((r, idx) => {
+            if (esMatchTituloTriage(r)) {
+                return renderFilaMatchTituloTriage(r, idx, colspanMatch, mostrarAutorLista, mostrarPubLista, mostrarFecha, umbral, seccionKey);
+            }
+            return renderFilaLegacyMatch(r, idx, mostrarAutorLista, mostrarPubLista, mostrarFecha, seccionKey);
+        }).join('');
+    }
+
+    function renderResultados() {
+        const { pendientes, pareados, sinMatch, umbral } = estadoResultados;
+        const totalAnalizado = pendientes.length + pareados.length + sinMatch.length;
+        ui.resumenGlobalTriaje.textContent = estadoResultados.tieneAnalisis
+            ? `Resumen: ${pendientes.length.toLocaleString()} para revisar · ${pareados.length.toLocaleString()} pareados · ${sinMatch.length.toLocaleString()} sin match · Umbral ${Math.round((umbral || 0) * 100)}%.`
+            : 'Aún no hay análisis. Pulsa «Analizar mapeo».';
+        ui.resumenPendientes.textContent = !estadoResultados.tieneAnalisis ? '—' : (pendientes.length
+            ? `${pendientes.length.toLocaleString()} en cola de triaje.`
+            : 'Nada pendiente.');
+        ui.resumenPareados.textContent = !estadoResultados.tieneAnalisis ? '—' : (pareados.length
+            ? `${pareados.length.toLocaleString()} confirmados.`
+            : 'Sin confirmaciones.');
+        const conFechaLista = sinMatch.filter(r => normalizarAnio4(r.fecha)).length;
+        ui.resumenNoMatch.textContent = !estadoResultados.tieneAnalisis ? '—' : (sinMatch.length
+            ? `${sinMatch.length.toLocaleString()} sin match${ui.colFecha && ui.colFecha.checked ? ` · Con año en lista: ${conFechaLista.toLocaleString()}` : ''}.`
+            : 'Todos los títulos tuvieron al menos un candidato sobre el umbral.');
+
+        const mostrarFecha = esVisibleColumna('fechaLista');
+        const colspanNoMatch = 4 - (mostrarFecha ? 0 : 1);
+        pintarListaMatchEnTbody(pendientes, 'pendientes', estadoResultados.tieneAnalisis);
+        pintarListaMatchEnTbody(pareados, 'pareados', estadoResultados.tieneAnalisis);
+
+        if (!estadoResultados.tieneAnalisis) {
+            ui.tablaNoMatchBody.innerHTML = `<tr><td colspan="${colspanNoMatch}" class="muted">Aquí aparecerán los sin match después del análisis.</td></tr>`;
+        } else if (!sinMatch.length) {
+            ui.tablaNoMatchBody.innerHTML = `<tr><td colspan="${colspanNoMatch}" class="muted">Sin entradas en esta sección.</td></tr>`;
+        } else {
+            ui.tablaNoMatchBody.innerHTML = sinMatch.map((r, idx) => `<tr>
+                <td>${idx + 1}</td>
+                <td>${escapeHtml(r.titulo)}</td>
+                <td data-col="fechaLista">${mostrarFecha ? escapeHtml(r.fecha || '') : ''}</td>
+                <td>${r && r.__origen === 'match' ? `<button class="btn-mini-revert" data-action="revertir-no-match" data-idx="${idx}" title="Revertir a Para revisar">↶ Revertir</button>` : ''}</td>
+            </tr>`).join('');
+        }
+        actualizarVisibilidadColumnas();
+    }
+
+    function restaurarFilaMatchDesdeSnapshot(orig) {
+        const o = cloneTituloMatchRow(orig);
+        if (esMatchTituloTriage(o)) {
+            o.estadoRevision = 'pendiente';
+            o.pareoSeleccionado = null;
+        } else {
+            o.estadoRevision = 'pendiente';
+        }
+        return o;
+    }
+
+    function confirmarMatchCandidato(seccion, idx, candidatoIdx) {
+        if (seccion !== 'pendientes') return;
+        const i = Number(idx);
+        const j = Number(candidatoIdx);
+        const arr = estadoResultados.pendientes;
+        if (!Number.isInteger(i) || i < 0 || i >= arr.length) return;
+        const row = arr[i];
+        if (!esMatchTituloTriage(row) || !Array.isArray(row.candidatos)) return;
+        if (!Number.isInteger(j) || j < 0 || j >= row.candidatos.length) return;
+        const cand = row.candidatos[j];
+        if (!cand) return;
+        row.pareoSeleccionado = enriquecerCandidatoConMeta(cand, row.buscado);
+        row.estadoRevision = 'confirmado';
+        const [moved] = arr.splice(i, 1);
+        estadoResultados.pareados.push(moved);
+        renderResultados();
+        persistirSesionEnLS();
+    }
+
+    function confirmarMatch(seccion, idx) {
+        if (seccion !== 'pendientes') return;
+        const i = Number(idx);
+        const arr = estadoResultados.pendientes;
+        if (!Number.isInteger(i) || i < 0 || i >= arr.length) return;
+        const [row] = arr.splice(i, 1);
+        if (!row) return;
+        if (esMatchTituloTriage(row)) {
+            arr.splice(i, 0, row);
+            return;
+        }
+        row.estadoRevision = 'confirmado';
+        estadoResultados.pareados.push(row);
+        renderResultados();
+        persistirSesionEnLS();
+    }
+
+    function moverANoMatch(seccion, idx) {
+        const i = Number(idx);
+        const arr = seccion === 'pareados' ? estadoResultados.pareados : estadoResultados.pendientes;
+        if (!Number.isInteger(i) || i < 0 || i >= arr.length) return;
+        const [movido] = arr.splice(i, 1);
+        if (!movido) return;
+        if (movido.estadoRevision === 'confirmado') {
+            const ok = window.confirm('Este título ya está marcado como correcto / pareado. ¿Seguro que quieres ponerlo como Sin match?');
+            if (!ok) {
+                arr.splice(i, 0, movido);
+                renderResultados();
+                return;
+            }
+        }
+        if (esMatchTituloTriage(movido)) {
+            const b = movido.buscado || {};
+            estadoResultados.sinMatch.unshift({
+                titulo: b.titulo,
+                autor: b.autor,
+                casaPublicadora: b.casaPublicadora,
+                fecha: b.fecha,
+                __origen: 'match',
+                __matchOriginal: cloneTituloMatchRow(movido)
+            });
+        } else {
+            estadoResultados.sinMatch.unshift({
+                titulo: movido.titulo,
+                fecha: movido.fecha,
+                __origen: 'match',
+                __matchOriginal: {
+                    titulo: movido.titulo,
+                    autor: movido.autor || '',
+                    fecha: movido.fecha,
+                    tituloSistema: movido.tituloSistema,
+                    autorCatalogo: movido.autorCatalogo || '',
+                    casaPublicadoraInput: movido.casaPublicadoraInput || '',
+                    casaPublicadora: movido.casaPublicadora || '',
+                    score: movido.score,
+                    scoreAutor: movido.scoreAutor,
+                    scorePublicadora: movido.scorePublicadora,
+                    codigos: movido.codigos,
+                    alternativas: movido.alternativas,
+                    registroTxt: movido.registroTxt,
+                    estadoRevision: 'pendiente'
+                }
+            });
+        }
+        renderResultados();
+        persistirSesionEnLS();
+    }
+
+    function revertirNoMatch(idx) {
+        const i = Number(idx);
+        const sm = estadoResultados.sinMatch;
+        if (!Number.isInteger(i) || i < 0 || i >= sm.length) return;
+        const row = sm[i];
+        if (!row || row.__origen !== 'match' || !row.__matchOriginal) return;
+        sm.splice(i, 1);
+        estadoResultados.pendientes.unshift(restaurarFilaMatchDesdeSnapshot(row.__matchOriginal));
+        renderResultados();
+        persistirSesionEnLS();
+    }
+
+    function usarAlternativaComoCorrecto(seccion, idx, altIdx) {
+        if (seccion !== 'pendientes') return;
+        const i = Number(idx);
+        const j = Number(altIdx);
+        const arr = estadoResultados.pendientes;
+        if (!Number.isInteger(i) || i < 0 || i >= arr.length) return;
+        const row = arr[i];
+        if (!row || !Array.isArray(row.alternativas) || !Number.isInteger(j) || j < 0 || j >= row.alternativas.length) return;
+        const alt = row.alternativas[j];
+        if (!alt) return;
+
+        row.tituloSistema = alt.titulo || row.tituloSistema;
+        row.score = Number.isFinite(alt.score) ? alt.score : row.score;
+        row.codigos = Array.isArray(alt.codigos) ? alt.codigos.slice() : row.codigos;
+        row.autorCatalogo = alt.autorCatalogo || row.autorCatalogo || '';
+        row.casaPublicadora = alt.casaPublicadora || '';
+        row.scoreAutor = scoreCampoTexto(row.autor, row.autorCatalogo, normalizarAutor);
+        row.scorePublicadora = scoreCampoTexto(row.casaPublicadoraInput, row.casaPublicadora, s => normalizarTitulo(limpiarPublicadora(s)));
+        row.scoreFecha = scoreAnioPublicacion(row.fecha, row.anioCatalogo || extraerAnioPublicacion(row.publicationInfo || ''));
+        row.registroTxt = 'Seleccionado manualmente desde otras opciones';
+        row.estadoRevision = 'confirmado';
+
+        const [moved] = arr.splice(i, 1);
+        estadoResultados.pareados.push(moved);
+        renderResultados();
+        persistirSesionEnLS();
+    }
+
+    /** Valor comparable para ordenar filas legacy (ej. modo publicadora) o triaje por título. */
+    function obtenerValorOrden(r, campo) {
+        if (!esMatchTituloTriage(r)) {
+            if (campo === 'titulo') return String(r.titulo || '');
+            if (campo === 'fechaLista') return normalizarAnio4(r.fecha);
+            if (campo === 'anioCatalogo') return normalizarAnio4(r.anioPublicacion || extraerAnioPublicacion(r.publicationInfo || ''));
+            if (campo === 'tituloSistema') return String(r.tituloSistema || '');
+            if (campo === 'casaPublicadora') return String(r.casaPublicadora || '');
+            if (campo === 'autorLista') return String(r.autor || '');
+            if (campo === 'pubLista') return String(r.casaPublicadoraInput || r.casaPublicadora || '');
+            if (campo === 'autorCatalogo') return String(r.autorCatalogo || '');
+            if (campo === 'similitud') return Number(r.score) || 0;
+            if (campo === 'simAutor') return r.scoreAutor ?? -1;
+            if (campo === 'simPub') return r.scorePublicadora ?? -1;
+            if (campo === 'simFecha') return r.scoreFecha ?? -1;
+            if (campo === 'otros') return (r.alternativas || []).length;
+            if (campo === 'barcodes') return (r.codigos || []).length;
+            if (campo === 'registro') return String(r.registroTxt || '');
+            return '';
+        }
+        const bd = r.buscado || {};
+        const candRaw = candidatoPreferidoParaOrden(r);
+        const enriched = candRaw ? enriquecerCandidatoConMeta(candRaw, bd) : null;
+        let regTxt = '';
+        if (r.estadoRevision === 'confirmado' && r.pareoSeleccionado) regTxt = String(r.pareoSeleccionado.registroTxt || 'Triaje confirmado');
+        else regTxt = `Triaje pendiente (${(r.candidatos || []).length} opciones)`;
+
+        if (campo === 'titulo') return String(bd.titulo || '');
+        if (campo === 'fechaLista') return normalizarAnio4(bd.fecha);
+        if (campo === 'anioCatalogo') return enriched ? normalizarAnio4(enriched.anioCatalogo) : '';
+        if (campo === 'tituloSistema') return enriched ? String(enriched.tituloCatalogo || '') : '';
+        if (campo === 'casaPublicadora') return enriched ? String(enriched.casaPublicadora || '') : '';
+        if (campo === 'autorLista') return String(bd.autor || '');
+        if (campo === 'pubLista') return String(bd.casaPublicadora || '');
+        if (campo === 'autorCatalogo') return enriched ? String(enriched.autorCatalogo || '') : '';
+        if (campo === 'similitud') return enriched ? Number(enriched.score) || 0 : 0;
+        if (campo === 'simAutor') return enriched ? (enriched.scoreAutor ?? -1) : -1;
+        if (campo === 'simPub') return enriched ? (enriched.scorePublicadora ?? -1) : -1;
+        if (campo === 'simFecha') return enriched ? (enriched.scoreFecha ?? -1) : -1;
+        if (campo === 'otros') return Math.max(0, (r.candidatos || []).length - 1);
+        if (campo === 'barcodes') return enriched ? ((enriched.barcodes || []).length) : 0;
+        if (campo === 'registro') return regTxt;
+        return '';
+    }
+
+    function obtenerValorOrdenSinMatch(r, campo) {
+        if (!r) return '';
+        if (campo === 'titulo') return String(r.titulo || '');
+        if (campo === 'fechaLista') return normalizarAnio4(r.fecha);
+        if (campo === 'origen') return r.__origen === 'match' ? 1 : 0;
+        return String(r.titulo || '');
+    }
+
+    function campoSinMatchEquivalente(campoRaw) {
+        const permitidos = new Set(OPCIONES_ORDEN_SIN_MATCH.map(o => o.campo));
+        if (campoRaw && permitidos.has(campoRaw)) return campoRaw;
+        return 'titulo';
+    }
+
+    function esCampoOrdenNumericoMatch(campo) {
+        return campo === 'fechaLista' || campo === 'anioCatalogo' || campo === 'similitud' || campo === 'simAutor' || campo === 'simPub'
+            || campo === 'simFecha' || campo === 'otros' || campo === 'barcodes';
+    }
+
+    function compararUnCampoMatch(a, b, campo, dir) {
+        const va = obtenerValorOrden(a, campo);
+        const vb = obtenerValorOrden(b, campo);
+        const mult = dir === 'desc' ? -1 : 1;
+        if (campo === 'otros' || campo === 'barcodes') {
+            return ((Number(va) || 0) - (Number(vb) || 0)) * mult;
+        }
+        if (esCampoOrdenNumericoMatch(campo)) {
+            const na = (va === null || va === undefined || va === '') ? Number.NEGATIVE_INFINITY : Number(va);
+            const nb = (vb === null || vb === undefined || vb === '') ? Number.NEGATIVE_INFINITY : Number(vb);
+            return (na - nb) * mult;
+        }
+        return String(va || '').localeCompare(String(vb || ''), 'es', { sensitivity: 'base' }) * mult;
+    }
+
+    function compararUnCampoSinMatch(a, b, campo, dir) {
+        const k = campoSinMatchEquivalente(campo);
+        const va = obtenerValorOrdenSinMatch(a, k);
+        const vb = obtenerValorOrdenSinMatch(b, k);
+        const mult = dir === 'desc' ? -1 : 1;
+        if (k === 'fechaLista' || k === 'origen') {
+            const na = (va === null || va === undefined || va === '') ? Number.NEGATIVE_INFINITY : Number(va);
+            const nb = (vb === null || vb === undefined || vb === '') ? Number.NEGATIVE_INFINITY : Number(vb);
+            return (na - nb) * mult;
+        }
+        return String(va || '').localeCompare(String(vb || ''), 'es', { sensitivity: 'base' }) * mult;
+    }
+
+    function ordenarPorDosCriteriosMatch(arr, c1, d1, c2, d2) {
+        if (!Array.isArray(arr) || arr.length < 2) return;
+        const dir1 = d1 === 'desc' ? 'desc' : 'asc';
+        const dir2 = d2 === 'desc' ? 'desc' : 'asc';
+        arr.sort((a, b) => {
+            let r = compararUnCampoMatch(a, b, c1, dir1);
+            if (r !== 0) return r;
+            if (!c2) return 0;
+            return compararUnCampoMatch(a, b, c2, dir2);
+        });
+    }
+
+    function ordenarPorDosCriteriosSinMatch(arr, c1, d1, c2, d2) {
+        if (!Array.isArray(arr) || arr.length < 2) return;
+        const k1 = campoSinMatchEquivalente(c1);
+        const k2 = c2 ? campoSinMatchEquivalente(c2) : '';
+        const dir1 = d1 === 'desc' ? 'desc' : 'asc';
+        const dir2 = d2 === 'desc' ? 'desc' : 'asc';
+        arr.sort((a, b) => {
+            const r = compararUnCampoSinMatch(a, b, k1, dir1);
+            if (r !== 0 || !k2 || k2 === k1) return r;
+            return compararUnCampoSinMatch(a, b, k2, dir2);
+        });
+    }
+
+    function leerYCierreOrdenDesdeDOM() {
+        const s1 = document.getElementById('ordCampo1');
+        const d1 = document.getElementById('ordDir1');
+        const s2 = document.getElementById('ordCampo2');
+        const d2 = document.getElementById('ordDir2');
+        return {
+            c1: (s1 && s1.value) || 'titulo',
+            dir1: (d1 && d1.value) || 'asc',
+            c2: (s2 && s2.value) || '',
+            dir2: (d2 && d2.value) || 'desc'
+        };
+    }
+
+    function aplicarOrdenEncadenadoATodasLasSecciones() {
+        const { c1, dir1, c2, dir2 } = leerYCierreOrdenDesdeDOM();
+        ordenarPorDosCriteriosMatch(estadoResultados.pendientes, c1, dir1, c2, dir2);
+        ordenarPorDosCriteriosMatch(estadoResultados.pareados, c1, dir1, c2, dir2);
+        ordenarPorDosCriteriosSinMatch(estadoResultados.sinMatch, c1, dir1, c2, dir2);
+        const det = document.getElementById('ordenMatchDetails');
+        if (det) det.open = false;
+        renderResultados();
+        persistirSesionEnLS();
+    }
+
+    function escapeHtml(s) {
+        return String(s || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function poblarSelectsOrden() {
+        const s1 = document.getElementById('ordCampo1');
+        const s2 = document.getElementById('ordCampo2');
+        if (!s1 || !s2) return;
+        const frag1 = OPCIONES_ORDEN_MATCH.map(o =>
+            `<option value="${escapeHtml(o.campo)}">${escapeHtml(o.texto)}</option>`
+        ).join('');
+        const frag2 = '<option value="">(Sin segundo criterio)</option>' + OPCIONES_ORDEN_MATCH.map(o =>
+            `<option value="${escapeHtml(o.campo)}">${escapeHtml(o.texto)}</option>`
+        ).join('');
+        s1.innerHTML = frag1;
+        s2.innerHTML = frag2;
+        s1.value = 'similitud';
+        s2.value = 'simAutor';
+        const d1 = document.getElementById('ordDir1');
+        const d2 = document.getElementById('ordDir2');
+        if (d1) d1.value = 'desc';
+        if (d2) d2.value = 'desc';
+    }
+
+    function abrirFichaBarcode(barcode) {
+        const code = String(barcode || '').trim();
+        if (!code) return;
+        const meta = catalogoMap.get(code) || {};
+        const pares = [
+            ['Barcode', code],
+            ['Título 245ab', meta.titulo245ab || recortarTituloBase(meta.titulo || '') || '—'],
+            ['Título completo', recortarTituloBase(meta.titulo || '') || '—'],
+            ['Autor', meta.autor || '—'],
+            ['Clasificación 999a', meta.clasificacion999 || meta.signatura || '—'],
+            ['Type 999t', meta.itemType999 || '—'],
+            ['Location 999l', meta.location999 || '—'],
+            ['Fecha creación 999u', meta.fechaCreacion999 || '—'],
+            ['Casa publicadora', meta.casaPublicadora || '—'],
+            ['Año publicación', meta.anioPublicacion || extraerAnioPublicacion(meta.publicationInfo || '') || '—'],
+            ['ISBN', meta.isbn || '—'],
+            ['Publication info', meta.publicationInfo || '—']
+        ];
+        let html = pares.map(([k, v]) => `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`).join('');
+        const detalleOcultoFicha = new Set([
+            'control 001', 'año fuente marc', 'ano fuente marc'
+        ]);
+        const detalle = (meta && meta.detalle && typeof meta.detalle === 'object') ? meta.detalle : {};
+        Object.keys(detalle).forEach(k => {
+            const v = String(detalle[k] || '').trim();
+            if (!v) return;
+            if (detalleOcultoFicha.has(String(k).toLowerCase())) return;
+            const ya = pares.some(([baseK]) => String(baseK).toLowerCase() === String(k).toLowerCase());
+            if (ya || String(k).toUpperCase() === 'ISBN') return;
+            html += `<div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div>`;
+        });
+        ui.fichaBody.innerHTML = html;
+        ui.modalFicha.classList.add('open');
+        ui.modalFicha.setAttribute('aria-hidden', 'false');
+    }
+
+    function cerrarFichaBarcode() {
+        ui.modalFicha.classList.remove('open');
+        ui.modalFicha.setAttribute('aria-hidden', 'true');
+    }
+
+    async function copiarTextoPlano(texto, okMsg) {
+        try {
+            await navigator.clipboard.writeText(texto);
+            ui.estadoProceso.textContent = okMsg || 'Copiado al portapapeles.';
+        } catch (e) {
+            ui.estadoProceso.textContent = 'No se pudo copiar automáticamente.';
+        }
+    }
+
+    function escaparParaTSV(valor) {
+        if (valor === null || valor === undefined) return '';
+        let str = String(valor);
+        if (str.includes('"') || str.includes('\t') || str.includes('\n') || str.includes('\r')) {
+            str = str.replace(/"/g, '""');
+            return `"${str}"`;
+        }
+        return str;
+    }
+
+    function filaTSV(celdas) {
+        return celdas.map(c => escaparParaTSV(c)).join('\t');
+    }
+
+    /** Exportación al copiar: una fila por cada 999 (barcode) del catálogo MRC. */
+    function encabezadoExportacion999() {
+        return filaTSV([
+            'Barcode lista',
+            'Titulo 245ab',
+            'Autor',
+            'Clasificacion 999a',
+            'Type 999t',
+            'Location 999l',
+            'Barcode',
+            'Fecha creacion 999u',
+            'Estado triaje'
+        ]);
+    }
+
+    function metaCatalogoAFilaExportacion999(barcodeKey, meta, barcodeLista, estadoTriaje) {
+        const m = meta || {};
+        const bc = String(barcodeKey || '').trim();
+        return filaTSV([
+            barcodeLista || bc,
+            m.titulo245ab || recortarTituloBase(m.titulo || '') || '',
+            m.autor || '',
+            m.clasificacion999 || m.signatura || '',
+            m.itemType999 || '',
+            m.location999 || '',
+            bc,
+            m.fechaCreacion999 || '',
+            estadoTriaje || ''
+        ]);
+    }
+
+    function obtenerBarcodesDeFilaMatch(r) {
+        if (!r) return [];
+        if (esMatchTituloTriage(r)) {
+            if (r.estadoRevision === 'confirmado' && r.pareoSeleccionado) {
+                return Array.isArray(r.pareoSeleccionado.barcodes) ? r.pareoSeleccionado.barcodes : [];
+            }
+            const cand0 = (r.candidatos && r.candidatos.length) ? r.candidatos[0] : null;
+            return cand0 && Array.isArray(cand0.barcodes) ? cand0.barcodes : [];
+        }
+        return Array.isArray(r.codigos) ? r.codigos : [];
+    }
+
+    function barcodeListaDeFila(r) {
+        const b = (r && r.buscado) || r || {};
+        return normalizarBarcodeBusqueda(b.barcode || b.titulo || r.titulo || r.barcode || '');
+    }
+
+    function filasExportacion999DeMatch(r, estadoTriaje) {
+        const listaBc = barcodeListaDeFila(r);
+        const barcodes = obtenerBarcodesDeFilaMatch(r);
+        if (!barcodes.length) {
+            return [metaCatalogoAFilaExportacion999('', {}, listaBc, estadoTriaje)];
+        }
+        return barcodes.map(bc => metaCatalogoAFilaExportacion999(bc, catalogoMap.get(bc) || {}, listaBc, estadoTriaje));
+    }
+
+    function encabezadoFilasTriajeTSV() {
+        return encabezadoExportacion999();
+    }
+
+    /** Una fila TSV desde un objeto match (triaje o legacy) — varias filas si hay varios 999. */
+    function serializarMatchFilaParaTSV(r) {
+        return filasExportacion999DeMatch(r, r.estadoRevision === 'confirmado' ? 'Pareado' : 'Para revisar').join('\n');
+    }
+
+    /** Pareados + Para revisar, con bloques etiquetados (TSV). */
+    function construirTSVMatches() {
+        const h = encabezadoExportacion999();
+        const { pareados, pendientes } = estadoResultados;
+        const partes = [];
+        if (pareados.length) {
+            const filas = [];
+            pareados.forEach(r => filas.push(...filasExportacion999DeMatch(r, 'Pareado')));
+            partes.push('=== PAREADOS ===\n' + [h].concat(filas).join('\n'));
+        }
+        if (pendientes.length) {
+            const filas = [];
+            pendientes.forEach(r => filas.push(...filasExportacion999DeMatch(r, 'Para revisar')));
+            partes.push('=== PARA REVISAR ===\n' + [h].concat(filas).join('\n'));
+        }
+        if (!partes.length) return h;
+        return partes.join('\n\n');
+    }
+
+    function construirTSVNoMatches() {
+        const h = encabezadoExportacion999();
+        const filas = estadoResultados.sinMatch.map(r => {
+            const bc = barcodeListaDeFila(r) || r.titulo || '';
+            const origen = r.__origen === 'match' ? 'Descarte manual' : (r.__origen === 'barcode' ? 'Barcode no encontrado' : 'Sin candidatos (umbral)');
+            return metaCatalogoAFilaExportacion999('', {}, bc, origen);
+        });
+        return [h].concat(filas).join('\n');
+    }
+
+    function construirTSVAmbasListas() {
+        return `${construirTSVMatches()}\n\n=== SIN MATCH ===\n${construirTSVNoMatches()}`;
+    }
+
+    function buscarPorBarcode(items) {
+        const matches = [];
+        const noMatches = [];
+        items.forEach(item => {
+            const query = normalizarBarcodeBusqueda(item.barcode || item.titulo);
+            if (!query) return;
+            const hit = resolverBarcodeEnCatalogo(query);
+            if (!hit) {
+                noMatches.push({
+                    titulo: query,
+                    barcode: query,
+                    autor: '',
+                    casaPublicadora: '',
+                    fecha: '',
+                    __origen: 'barcode'
+                });
+                return;
+            }
+            const meta = hit.meta || {};
+            const bcKey = hit.barcodeKey;
+            matches.push({
+                titulo: query,
+                barcode: query,
+                autor: item.autor || '',
+                casaPublicadora: item.casaPublicadora || '',
+                fecha: item.fecha || '',
+                tituloSistema: meta.titulo245ab || recortarTituloBase(meta.titulo || ''),
+                autorCatalogo: String(meta.autor || ''),
+                casaPublicadora: String(meta.casaPublicadora || ''),
+                score: 1,
+                scoreAutor: null,
+                scorePublicadora: null,
+                scoreFecha: null,
+                codigos: [bcKey],
+                alternativas: [],
+                registroTxt: 'Match exacto por barcode (999$i)',
+                estadoRevision: 'pendiente'
+            });
+        });
+        return { matches, noMatches };
+    }
+
+    function buscarPorPublicadora(items) {
+        const matches = [];
+        const noMatches = [];
+        items.forEach(item => {
+            const queryRaw = String(item.titulo || '').trim();
+            const qNorm = normalizarTitulo(queryRaw);
+            const qTokens = tokenizar(qNorm).filter(t => t.length >= 3);
+            if (!qNorm) return;
+            let hubo = false;
+            catalogoMap.forEach((meta, barcode) => {
+                const pub = limpiarPublicadora(meta.casaPublicadora || '');
+                if (!pub || pub.length < 4) return;
+                const pNorm = normalizarTitulo(pub);
+                const pTokens = tokenizar(pNorm).filter(t => t.length >= 3);
+                if (!pNorm || pNorm.length < 4) return;
+
+                const pSet = new Set(pTokens);
+                const tokensTotales = qTokens.length || 1;
+                let tokensCoinciden = 0;
+                qTokens.forEach(t => { if (pSet.has(t)) tokensCoinciden++; });
+                const cobertura = tokensCoinciden / tokensTotales;
+
+                const sc = similitudCompuesta(qNorm, pNorm, qTokens, pTokens);
+                const contiene = pNorm.includes(qNorm); // solo publicadora contiene query, no al revés
+
+                // Regla más estricta para evitar falsos positivos como "s", "[?]", etc.
+                const esMatch = contiene || (cobertura >= 1 && sc >= 0.55) || (cobertura >= 0.7 && sc >= 0.82);
+                if (esMatch) {
+                    hubo = true;
+                    matches.push({
+                        titulo: queryRaw,
+                        autor: item.autor || '',
+                        casaPublicadoraInput: item.casaPublicadora || '',
+                        fecha: item.fecha || '',
+                        tituloSistema: recortarTituloBase(String(meta.titulo || '').trim()),
+                        autorCatalogo: String(meta.autor || ''),
+                        casaPublicadora: pub,
+                        score: contiene ? Math.max(0.92, sc) : sc,
+                        scoreAutor: scoreCampoTexto(item.autor, meta.autor, normalizarAutor),
+                        scorePublicadora: null,
+                        scoreFecha: scoreAnioPublicacion(item.fecha, meta.anioPublicacion || extraerAnioPublicacion(meta.publicationInfo || '')),
+                        codigos: [barcode],
+                        alternativas: [],
+                        registroTxt: 'Match por casa publicadora',
+                        estadoRevision: 'pendiente'
+                    });
+                }
+            });
+            if (!hubo) noMatches.push({ ...item });
+        });
+        return { matches, noMatches };
+    }
+
+    function bindEvents() {
+        ui.inputTSV.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            setPipelineCarga(true, 3, 'Iniciando carga de archivo TSV...');
+            reader.onload = async () => {
+                try {
+                    await cargarMapaDesdeTSV(reader.result, f.name);
+                    ui.estadoProceso.textContent = 'Catálogo TSV cargado.';
+                } catch (err) {
+                    setPipelineCarga(false);
+                    ui.estadoProceso.textContent = err.message || 'Error al cargar TSV.';
+                } finally {
+                    e.target.value = '';
+                }
+            };
+            setTimeout(() => reader.readAsText(f, 'UTF-8'), 0);
+        });
+
+        ui.inputExcel.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            setPipelineCarga(true, 3, 'Iniciando carga de archivo Excel...');
+            reader.onload = async () => {
+                try {
+                    await cargarMapaDesdeExcel(reader.result, f.name);
+                    ui.estadoProceso.textContent = 'Catálogo Excel cargado.';
+                } catch (err) {
+                    setPipelineCarga(false);
+                    ui.estadoProceso.textContent = err.message || 'Error al cargar Excel.';
+                } finally {
+                    e.target.value = '';
+                }
+            };
+            setTimeout(() => reader.readAsArrayBuffer(f), 0);
+        });
+
+        ui.inputSirsi.addEventListener('change', (e) => {
+            const f = e.target.files && e.target.files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            setPipelineCarga(true, 3, 'Iniciando carga de TXT Sirsi...');
+            reader.onload = async () => {
+                try {
+                    await cargarMapaDesdeSirsi(reader.result, f.name);
+                    ui.estadoProceso.textContent = 'Catálogo Sirsi cargado.';
+                } catch (err) {
+                    setPipelineCarga(false);
+                    ui.estadoProceso.textContent = err.message || 'Error al cargar TXT Sirsi.';
+                } finally {
+                    e.target.value = '';
+                }
+            };
+            setTimeout(() => reader.readAsText(f, 'UTF-8'), 0);
+        });
+
+        if (ui.inputMrc) {
+            ui.inputMrc.addEventListener('change', (e) => {
+                const f = e.target.files && e.target.files[0];
+                if (!f) return;
+                if (!/\.mrc$/i.test(f.name)) {
+                    ui.estadoProceso.textContent = 'Solo se admiten archivos .mrc';
+                    e.target.value = '';
+                    return;
+                }
+                const reader = new FileReader();
+                setPipelineCarga(true, 3, 'Iniciando carga de archivo MRC...');
+                reader.onload = async () => {
+                    try {
+                        await cargarMapaDesdeMrc(reader.result, f.name);
+                        ui.estadoProceso.textContent = 'Catálogo MRC cargado.';
+                    } catch (err) {
+                        setPipelineCarga(false);
+                        ui.estadoProceso.textContent = err.message || 'Error al cargar MRC.';
+                    } finally {
+                        e.target.value = '';
+                    }
+                };
+                setTimeout(() => reader.readAsArrayBuffer(f), 0);
+            });
+        }
+
+        document.getElementById('btnQuitarCatalogo').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (analizando) {
+                ui.estadoProceso.textContent = 'Espera a que termine el análisis para quitar el catálogo.';
+                return;
+            }
+            const ok = window.confirm('¿Seguro que quieres quitar el catálogo cargado?');
+            if (!ok) return;
+            catalogoMap = new Map();
+            catalogoUnidad = 'barcodes';
+            ultimoNombreCatalogo = '';
+            indiceTitulos = [];
+            indicePorToken = new Map();
+            indicePorPref2 = new Map();
+            indicePorNorm = new Map();
+            limpiarDatosPersistidos();
+            setPipelineCarga(false);
+            setPipelineAnalisis(false);
+            actualizarEstadoCatalogo('');
+            ui.estadoProceso.textContent = 'Catálogo removido.';
+        });
+
+        document.getElementById('btnAnalizar').addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            analizar();
+        });
+        document.getElementById('btnLimpiar').addEventListener('click', () => {
+            ui.inputLista.value = '';
+            if (ui.tablaPendientesBody) ui.tablaPendientesBody.innerHTML = '';
+            if (ui.tablaPareadosBody) ui.tablaPareadosBody.innerHTML = '';
+            ui.tablaNoMatchBody.innerHTML = '';
+            if (ui.resumenGlobalTriaje) ui.resumenGlobalTriaje.textContent = 'Aún no hay análisis. Pulsa «Analizar mapeo».';
+            if (ui.resumenPendientes) ui.resumenPendientes.textContent = '—';
+            if (ui.resumenPareados) ui.resumenPareados.textContent = '—';
+            ui.resumenNoMatch.textContent = '—';
+            ui.estadoProceso.textContent = 'Entrada limpiada.';
+            estadoResultados = { pendientes: [], pareados: [], sinMatch: [], umbral: 0, tieneAnalisis: false };
+            persistirSesionEnLS();
+        });
+
+        if (ui.chkMantenerSesion) {
+            ui.chkMantenerSesion.addEventListener('change', () => {
+                const activo = sesionPersistenciaActiva();
+                guardarPrefMantenerSesion(activo);
+                if (activo) {
+                    persistirSesionEnLS();
+                    ui.estadoProceso.textContent = 'Guardado activado: catálogo y triaje se restaurarán al recargar.';
+                } else {
+                    limpiarDatosPersistidos();
+                    ui.estadoProceso.textContent = 'Guardado desactivado: al recargar la página no se restaurará nada.';
+                }
+            });
+        }
+
+        if (ui.inputLista) {
+            ui.inputLista.addEventListener('input', () => persistirSesionEnLSDebounced(500));
+        }
+        [ui.colAutor, ui.colPublicadora, ui.colFecha, ui.modoBusqueda].forEach(el => {
+            if (!el) return;
+            el.addEventListener('change', () => {
+                if (el === ui.modoBusqueda) actualizarUiModoBusqueda();
+                persistirSesionEnLSDebounced(200);
+            });
+        });
+        actualizarUiModoBusqueda();
+
+        window.addEventListener('beforeunload', () => {
+            if (sesionPersistenciaActiva()) guardarSesionEnLS();
+        });
+
+        ui.umbral.addEventListener('input', () => {
+            ui.umbralValor.textContent = `${ui.umbral.value}%`;
+            try { localStorage.setItem(LS_UMBRAL, String(ui.umbral.value)); } catch (e) { /* ignore */ }
+            persistirSesionEnLSDebounced(300);
+        });
+        [ui.colAutor, ui.colPublicadora, ui.colFecha].forEach(chk => {
+            if (!chk) return;
+            chk.addEventListener('change', () => {
+                renderResultados();
+            });
+        });
+
+        const btnAplicarOrden = document.getElementById('btnAplicarOrden');
+        if (btnAplicarOrden) {
+            btnAplicarOrden.addEventListener('click', (e) => {
+                e.preventDefault();
+                aplicarOrdenEncadenadoATodasLasSecciones();
+            });
+        }
+
+        const btnCopiarMatch = document.getElementById('btnCopiarMatch');
+        if (btnCopiarMatch) {
+            btnCopiarMatch.addEventListener('click', () => {
+                copiarTextoPlano(construirTSVMatches(), 'Copiado: TSV con datos MARC/999 (una fila por ejemplar). Pega en Excel.');
+            });
+        }
+        const btnCopiarNoMatch = document.getElementById('btnCopiarNoMatch');
+        if (btnCopiarNoMatch) {
+            btnCopiarNoMatch.addEventListener('click', () => {
+                copiarTextoPlano(construirTSVNoMatches(), 'Copiado: bloque SIN MATCH + columna Origen (TSV).');
+            });
+        }
+        const btnCopiarTodo = document.getElementById('btnCopiarTodo');
+        if (btnCopiarTodo) {
+            btnCopiarTodo.addEventListener('click', () => {
+                copiarTextoPlano(construirTSVAmbasListas(), 'Copiado: PAREADOS + PARA REVISAR + SIN MATCH (TSV).');
+            });
+        }
+
+        function delegacionClickMatches(e) {
+            const bar = e.target.closest('[data-barcode]');
+            if (bar) {
+                abrirFichaBarcode(bar.getAttribute('data-barcode'));
+                return;
+            }
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const accion = btn.getAttribute('data-action');
+            const idx = btn.getAttribute('data-idx');
+            const sec = btn.getAttribute('data-seccion') || 'pendientes';
+            if (accion === 'confirmar') confirmarMatch(sec, idx);
+            if (accion === 'confirmar-candidato') confirmarMatchCandidato(sec, idx, btn.getAttribute('data-candidato-idx'));
+            if (accion === 'mover-no-match') moverANoMatch(sec, idx);
+            if (accion === 'usar-alt-correcto') usarAlternativaComoCorrecto(sec, idx, btn.getAttribute('data-alt-idx'));
+        }
+        [ui.tablaPendientesBody, ui.tablaPareadosBody].forEach(tb => {
+            if (tb) tb.addEventListener('click', delegacionClickMatches);
+        });
+
+        if (ui.btnCerrarFicha) {
+            ui.btnCerrarFicha.addEventListener('click', cerrarFichaBarcode);
+        }
+        if (ui.modalFicha) {
+            ui.modalFicha.addEventListener('click', (e) => {
+                if (e.target === ui.modalFicha) cerrarFichaBarcode();
+            });
+        }
+
+        ui.tablaNoMatchBody.addEventListener('click', (e) => {
+            const btn = e.target.closest('button[data-action]');
+            if (!btn) return;
+            const accion = btn.getAttribute('data-action');
+            const idx = btn.getAttribute('data-idx');
+            if (accion === 'revertir-no-match') revertirNoMatch(idx);
+        });
+    }
+
+    function init() {
+        bindEvents();
+        try {
+            const u = localStorage.getItem(LS_UMBRAL);
+            if (u) {
+                ui.umbral.value = String(Math.max(40, Math.min(100, Number(u) || 50)));
+                ui.umbralValor.textContent = `${ui.umbral.value}%`;
+            }
+        } catch (e) { /* ignore */ }
+
+        const mantener = leerPrefMantenerSesion();
+        if (ui.chkMantenerSesion) ui.chkMantenerSesion.checked = mantener;
+
+        if (!mantener) {
+            limpiarDatosPersistidos();
+        } else {
+            cargarCatalogoDesdeLS();
+            cargarSesionDesdeLS();
+        }
+
+        actualizarEstadoCatalogo(catalogoMap.size
+            ? (ultimoNombreCatalogo || 'Catálogo guardado')
+            : '');
+        actualizarUiModoBusqueda();
+        actualizarVisibilidadColumnas();
+        poblarSelectsOrden();
+        renderResultados();
+        if (mantener && estadoResultados.tieneAnalisis) {
+            ui.estadoProceso.textContent = 'Sesión restaurada (catálogo y triaje).';
+        }
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
