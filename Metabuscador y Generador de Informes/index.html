@@ -3544,6 +3544,73 @@
         html[data-tema="dia"] button.crit-range-toggle:hover {
             background: rgba(15, 23, 42, 0.06);
         }
+        select.crit-date-mode {
+            flex: 0 0 auto;
+            appearance: none;
+            -webkit-appearance: none;
+            padding: 2px 22px 2px 8px;
+            font-size: 0.68rem;
+            font-weight: 600;
+            line-height: 1.25;
+            border-radius: 5px;
+            border: 1px solid var(--field-border);
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 6px center,
+                rgba(148, 163, 184, 0.1);
+            color: var(--muted);
+            cursor: pointer;
+            font-family: inherit;
+            max-width: 9.5rem;
+        }
+        select.crit-date-mode:hover,
+        select.crit-date-mode:focus {
+            color: var(--text);
+            border-color: var(--accent-hi);
+            outline: none;
+        }
+        select.crit-date-mode option {
+            background: var(--dd-option-bg);
+            color: var(--dd-option-text);
+        }
+        .criterion-block:not(.crit-has-date-modes) select.crit-date-mode {
+            display: none;
+        }
+        .criterion-block.crit-has-date-modes .crit-exact-chip,
+        .criterion-block.crit-has-date-modes input.crit-exact {
+            display: none;
+        }
+        .mb-cal-open-btn.crit-term-cal-exact {
+            display: none;
+            flex: 0 0 auto;
+            width: 2.35rem;
+            align-self: stretch;
+        }
+        .criterion-block.crit-date-mode-exacta .mb-cal-open-btn.crit-term-cal-exact,
+        .criterion-block.crit-date-mode-mes:not(.crit-term-range-mode) .mb-cal-open-btn.crit-term-cal-exact {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            border: 1px solid var(--select-field-border);
+            background: var(--select-field-bg);
+            color: var(--accent-hi);
+            cursor: pointer;
+            padding: 0;
+        }
+        .criterion-block.crit-date-mode-ano .crit-range-bound .mb-cal-open-btn {
+            display: none !important;
+        }
+        .criterion-block.crit-date-mode-exacta .crit-term-single-wrap input.crit-term.inp-term-wide,
+        .criterion-block.crit-date-mode-mes:not(.crit-term-range-mode) .crit-term-single-wrap input.crit-term.inp-term-wide {
+            cursor: pointer;
+        }
+        .criterion-block.crit-calendar-month-mode .crit-range-bound input.inp-term-wide.crit-term-lo,
+        .criterion-block.crit-calendar-month-mode .crit-range-bound input.inp-term-wide.crit-term-hi {
+            cursor: pointer;
+        }
+        .criterion-block.crit-calendar-month-mode.crit-term-range-mode .mb-cal-open-btn {
+            display: inline-flex;
+        }
         .crit-term-inputs {
             width: 100%;
         }
@@ -3552,6 +3619,413 @@
             width: 100%;
             align-items: center;
             gap: 10px;
+        }
+        .crit-range-bound {
+            position: relative;
+            flex: 1 1 0;
+            min-width: 0;
+            display: flex;
+            align-items: stretch;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .crit-range-bound input.inp-term-wide.crit-term-lo,
+        .crit-range-bound input.inp-term-wide.crit-term-hi {
+            flex: 1 1 auto;
+            width: 100%;
+            min-width: 0;
+            cursor: text;
+        }
+        .criterion-block.crit-calendar-range-mode .crit-range-bound input.inp-term-wide.crit-term-lo,
+        .criterion-block.crit-calendar-range-mode .crit-range-bound input.inp-term-wide.crit-term-hi {
+            cursor: pointer;
+        }
+        .mb-cal-open-btn {
+            flex: 0 0 auto;
+            width: 2.35rem;
+            border-radius: 6px;
+            border: 1px solid var(--select-field-border);
+            background: var(--select-field-bg);
+            color: var(--accent-hi);
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            transition: background 0.15s ease, border-color 0.15s ease;
+        }
+        .criterion-block.crit-calendar-range-mode .mb-cal-open-btn {
+            display: inline-flex;
+        }
+        .mb-cal-open-btn:hover {
+            background: var(--accent-soft);
+            border-color: var(--accent-hi);
+        }
+        .mb-cal-open-btn svg {
+            width: 16px;
+            height: 16px;
+            fill: currentColor;
+        }
+        .crit-term-date-picker {
+            display: none !important;
+        }
+        .crit-range-cal-hint {
+            display: none;
+            margin-top: 6px;
+            color: var(--muted);
+            font-size: 0.72rem;
+            line-height: 1.35;
+        }
+        .criterion-block.crit-term-range-mode.crit-calendar-range-mode .crit-range-cal-hint,
+        .criterion-block.crit-has-date-modes .crit-range-cal-hint {
+            display: block;
+        }
+        .crit-term-single-wrap.has-date-error .crit-date-warn {
+            display: block;
+        }
+        .crit-term-single-wrap .crit-date-warn {
+            flex: 1 0 100%;
+        }
+        /* Calendario estilizado (popup) */
+        .mb-cal-pop {
+            position: fixed;
+            z-index: 10080;
+            width: 288px;
+            padding: 12px;
+            border-radius: 12px;
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
+            box-shadow: 0 18px 40px rgba(2, 6, 23, 0.55), 0 0 0 1px rgba(147, 197, 253, 0.08);
+            color: var(--text);
+            font-family: 'Segoe UI', system-ui, sans-serif;
+        }
+        .mb-cal-pop[hidden] { display: none !important; }
+        .mb-cal-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        .mb-cal-title {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            min-width: 0;
+        }
+        .mb-cal-title-btn {
+            border: 0;
+            background: transparent;
+            color: var(--accent-hi);
+            font-size: 0.88rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            text-transform: capitalize;
+        }
+        .mb-cal-title-btn:hover,
+        .mb-cal-title-btn.is-open {
+            background: var(--accent-soft);
+        }
+        .mb-cal-pick-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+            min-height: 196px;
+            align-content: start;
+        }
+        .mb-cal-pick-grid.is-years {
+            grid-template-columns: repeat(4, 1fr);
+            max-height: 220px;
+            overflow: auto;
+        }
+        .mb-cal-pick-item {
+            padding: 10px 6px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: var(--surface-2);
+            color: var(--text-on-field);
+            font-size: 0.78rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            text-transform: capitalize;
+        }
+        .mb-cal-pick-item:hover {
+            border-color: rgba(147, 197, 253, 0.35);
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+        .mb-cal-pick-item.is-selected {
+            background: var(--btn-buscar-bg);
+            color: #fff;
+            border-color: var(--btn-buscar-bg-hover);
+        }
+        .mb-cal-pick-item.is-current {
+            box-shadow: inset 0 0 0 1px var(--accent-2);
+        }
+        .mb-cal-year-nav {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+        .mb-cal-year-nav button {
+            flex: 1;
+            padding: 6px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text-on-field);
+            font-size: 0.72rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .mb-cal-year-nav button:hover {
+            border-color: var(--accent-hi);
+            background: var(--accent-soft);
+        }
+        .crit-date-invalid {
+            color: #f87171 !important;
+            border-color: #f87171 !important;
+            box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.35);
+        }
+        .crit-date-warn {
+            display: none;
+            margin-top: 4px;
+            color: #f87171;
+            font-size: 0.7rem;
+            line-height: 1.35;
+        }
+        .crit-range-bound.has-date-error .crit-date-warn {
+            display: block;
+        }
+        .crit-range-bound .crit-date-warn {
+            flex: 1 0 100%;
+            order: 3;
+        }
+        .mb-cal-nav {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--surface-2);
+            color: var(--text);
+            cursor: pointer;
+            font-size: 1rem;
+            line-height: 1;
+        }
+        .mb-cal-nav:hover {
+            border-color: var(--accent-hi);
+            background: var(--accent-soft);
+        }
+        .mb-cal-week {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+            margin-bottom: 4px;
+        }
+        .mb-cal-body {
+            min-height: 248px;
+        }
+        .mb-cal-body-days[hidden],
+        .mb-cal-body-pick[hidden],
+        .mb-cal-week[hidden],
+        .mb-cal-grid[hidden],
+        .mb-cal-pick-wrap[hidden] {
+            display: none !important;
+        }
+        .mb-cal-pick-wrap {
+            min-height: 248px;
+        }
+        .mb-cal-wd {
+            text-align: center;
+            font-size: 0.68rem;
+            font-weight: 700;
+            color: var(--muted);
+            padding: 4px 0;
+        }
+        .mb-cal-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+        .mb-cal-day {
+            height: 34px;
+            border-radius: 8px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-on-field);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .mb-cal-day:hover:not(:disabled) {
+            background: var(--accent-soft);
+            border-color: rgba(147, 197, 253, 0.35);
+        }
+        .mb-cal-day.is-other {
+            color: var(--muted);
+            opacity: 0.45;
+        }
+        .mb-cal-day.is-today {
+            box-shadow: inset 0 0 0 1px var(--accent-2);
+        }
+        .mb-cal-day.is-selected {
+            background: var(--btn-buscar-bg);
+            color: #fff;
+            border-color: var(--btn-buscar-bg-hover);
+        }
+        .mb-cal-day:disabled {
+            opacity: 0.25;
+            cursor: default;
+        }
+        .mb-cal-foot {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--border);
+        }
+        .mb-cal-foot button {
+            flex: 1;
+            padding: 7px 10px;
+            border-radius: 8px;
+            border: 1px solid var(--btn-tier-soft-border);
+            background: var(--btn-tier-soft-bg);
+            color: var(--text-on-field);
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .mb-cal-foot button:hover {
+            border-color: var(--accent-hi);
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+        /* Combobox campo con búsqueda */
+        .crit-field-combo {
+            position: relative;
+            flex: 1 1 auto;
+            min-width: 200px;
+            max-width: 100%;
+        }
+        .crit-field-native-sr {
+            position: absolute !important;
+            width: 1px !important;
+            height: 1px !important;
+            padding: 0 !important;
+            margin: -1px !important;
+            overflow: hidden !important;
+            clip: rect(0, 0, 0, 0) !important;
+            white-space: nowrap !important;
+            border: 0 !important;
+        }
+        .crit-field-combo-btn {
+            appearance: none;
+            width: 100%;
+            min-width: 200px;
+            max-width: 100%;
+            padding: 8px 28px 8px 12px;
+            border-radius: 6px;
+            border: 1px solid var(--select-field-border);
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2393c5fd' d='M2 4l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 10px center,
+                var(--select-field-bg);
+            color: var(--dd-text);
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-align: left;
+            font-family: inherit;
+        }
+        .crit-field-combo.is-overridden .crit-field-combo-btn {
+            opacity: 0.85;
+            border-color: var(--select-modo-border);
+            background:
+                url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394b8e8' d='M2 4l4 4 4-4'/%3E%3C/svg%3E") no-repeat right 10px center,
+                var(--select-modo-bg);
+            color: var(--muted);
+        }
+        .crit-field-combo-btn:focus-visible {
+            outline: 2px solid var(--accent-hi);
+            outline-offset: 1px;
+        }
+        .crit-field-combo-panel {
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: calc(100% + 4px);
+            z-index: 10070;
+            border-radius: 10px;
+            border: 1px solid var(--border-strong);
+            background: var(--surface);
+            box-shadow: 0 16px 36px rgba(2, 6, 23, 0.5);
+            padding: 8px;
+            max-height: min(340px, 55vh);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .crit-field-combo-panel[hidden] { display: none !important; }
+        .crit-field-combo-search {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--field-border);
+            background: var(--field-bg);
+            color: var(--text-on-field);
+            font-size: 0.82rem;
+            font-family: inherit;
+            outline: none;
+        }
+        .crit-field-combo-search:focus {
+            border-color: var(--accent-hi);
+            box-shadow: 0 0 0 2px var(--accent-ring);
+        }
+        .crit-field-combo-list {
+            overflow: auto;
+            max-height: 260px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .crit-field-combo-opt {
+            text-align: left;
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 0;
+            background: transparent;
+            color: var(--dd-option-text);
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .crit-field-combo-opt.is-smart {
+            color: var(--accent-hi);
+            font-weight: 700;
+        }
+        .crit-field-combo-opt:hover,
+        .crit-field-combo-opt.is-active {
+            background: var(--accent-soft);
+            color: var(--text);
+        }
+        .crit-field-combo-opt.is-selected {
+            background: rgba(37, 99, 235, 0.28);
+            color: var(--accent-hi);
+        }
+        .crit-field-combo-empty {
+            padding: 10px;
+            color: var(--muted);
+            font-size: 0.78rem;
+            text-align: center;
         }
         .crit-range-dash {
             flex: 0 0 auto;
@@ -3583,6 +4057,7 @@
         .crit-term-single-wrap {
             display: flex;
             align-items: center;
+            flex-wrap: wrap;
             gap: 8px;
             width: 100%;
             min-width: 0;
@@ -5879,6 +6354,7 @@
                         <li><strong>Códigos locales (Sirsi/Unicorn)</strong>: el rango <code>993–999</code> suele ser institucional; el detalle depende de la migración. <strong>En esta aplicación, <code>999</code></strong> se trata como <strong>registro de ejemplar/ítem Sirsi</strong>: de un volcado típico se espera el <strong>código de barras en <code>$i</code></strong>, signatura y datos de ubicación en otros subcampos (<code>$a</code>, <code>$c</code>, <code>$t</code>, <code>$l</code>…). La lista de ejemplares y la búsqueda por códigos de barra usan solo repeticiones de <code>999</code>. Los nombres oficiales MARC 21 de las etiquetas (incluida la fila específica para <code>999</code> en nuestro entorno) están en la referencia JSON embebida del script y en el visor del registro (tooltip al dejar el puntero ~2&nbsp;s sobre el número de campo).</li>
                         <li><strong>Metabuscador:</strong> en cada línea elije un <strong>campo</strong> del menú (o en el recuadro pequeño <code>NNN</code>, <code>NNNabc</code> / <code>NNN a b</code> sin necesidad de <code>#</code>, o <code>NNN#subs</code> cuando convenga, p. ej. subcampos numéricos). Si deja el menú en <strong>«Seleccionar»</strong>, el término se busca en <strong>cualquier parte del registro</strong> (contenido bibliográfico más campos locales <code>993</code>–<code>999</code>). Al lado, uno o más <strong>subcampos</strong> opcionales (<code>a i</code>, <code>a, c</code>, <code>$a</code>) y abajo el <strong>término</strong>. El chip <strong>Exacto</strong> junto al término controla igualdad total (encendido, sin <code>*</code>) frente a <strong>palabras completas</strong> en orden (apagado, sin <code>*</code>); con <code>*</code> y Exacto encendido puede anclar subcadenas (<code>*texto*</code>). El <strong><code>*</code></strong> con Exacto apagado sigue siendo comodín clásico. Los acentos se ignoran. Entre líneas: <strong>AND</strong>, <strong>OR</strong> o <strong>NOT</strong>.</li>
                         <li><strong>Signatura (<code>999 $a</code>) y «Signatura completa (escaneo interno)»:</strong> si el término <strong>no lleva <code>*</code></strong>, no cuenta como coincidencia cuando solo se <strong>añaden letras o dígitos al final</strong> del término (p. ej. <code>P … C335c</code> ya no encuentra <code>P … C335ca</code>). Tampoco se mezcla la misma signatura base con <strong>otra copia</strong> <code>c.2</code>, <code>c.3</code>… si el término no lleva <code>c.N</code> (Sirsi <code>$c</code>). Tras un espacio u otro separador, <strong>no</strong> se admite texto adicional no buscado (p. ej. <code>DVD-ROM</code> al final de la signatura completa). Si el término termina en volumen tipo <code>v.1</code>, <strong>no</strong> se agrupan <code>v.10</code>, <code>v.11</code>, etc. Para incluir varias variantes use comodín (p. ej. <code>P … C335c*</code>). El chip <strong>Exacto</strong> encendido exige igualdad total del texto normalizado en esa línea (en TSV masivo, al cargar se enciende solo si el término no contiene <code>*</code>).</li>
+                        <li><strong>Fecha de Creación del Ejemplar (<code>999 $u</code>):</strong> use el campo del menú con ese nombre. En <strong>(Rangos)</strong> puede elegir fechas exactas con el calendario (se guardan como <code>MM/DD/YYYY</code>, formato Sirsi) o seguir usando solo años (<code>2024-2025</code>, <code>2024-*</code>). Ejemplo año fiscal: <code>07/01/2024</code>–<code>06/30/2025</code>.</li>
                         <li><strong>Rango numérico</strong> (solo el patrón, sin más texto): <code>2015-2020</code> si algún número del texto del criterio está en ese intervalo; <code>2015-*</code> desde ese valor en adelante; <code>*-2015</code> hasta ese valor inclusive. Cualquier otro uso de <code>*</code> es comodín de texto.</li>
                     </ul>
                 </div>
@@ -8193,10 +8669,260 @@ Hasta 5 campos personalizados (estadísticas locales, financiación, formato fí
         return result;
     }
 
+    /** Sirsi 999 $u: MM/DD/YYYY → entero ordenable YYYYMMDD (NaN si no es fecha completa). */
+    function mbParseSirsiDateToOrdinal(raw) {
+        var s = String(raw || '').trim();
+        var md = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!md) {
+            md = s.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\b/);
+            if (!md) return NaN;
+        }
+        var mo = parseInt(md[1], 10);
+        var da = parseInt(md[2], 10);
+        var ye = parseInt(md[3], 10);
+        if (!Number.isFinite(mo) || !Number.isFinite(da) || !Number.isFinite(ye)) return NaN;
+        if (mo < 1 || mo > 12 || da < 1 || da > 31 || ye < 1000 || ye > 9999) return NaN;
+        return ye * 10000 + mo * 100 + da;
+    }
+
+    function mbPad2(n) {
+        var x = String(n);
+        return x.length >= 2 ? x : ('0' + x);
+    }
+
+    /** ISO date input (YYYY-MM-DD) → Sirsi MM/DD/YYYY. */
+    function mbIsoDateToSirsi(iso) {
+        var m = String(iso || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return '';
+        return m[2] + '/' + m[3] + '/' + m[1];
+    }
+
+    /** Sirsi MM/DD/YYYY → ISO YYYY-MM-DD para <input type="date">. */
+    function mbSirsiDateToIso(sirsi) {
+        var m = String(sirsi || '').trim().match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (!m) return '';
+        return m[3] + '-' + mbPad2(m[1]) + '-' + mbPad2(m[2]);
+    }
+
+    /**
+     * Valida texto escrito a mano para 999 $u / calendario.
+     * Sirsi: MM/DD/YYYY. Detecta guiones, día-primero (p. ej. 28/07/2024) y mes imposible.
+     */
+    function mbValidateSirsiDateTyped(raw) {
+        var s = String(raw != null ? raw : '').trim();
+        if (!s || s === '*') return { ok: true, empty: !s };
+        if (/^\d{4}$/.test(s)) return { ok: true, yearOnly: true };
+        if (/^\d{4}-\*$/.test(s) || /^\*-\d{4}$/.test(s) || /^\d{4}-\d{4}$/.test(s)) return { ok: true, yearRange: true };
+        if (s.indexOf('-') !== -1 && /\d/.test(s)) {
+            return {
+                ok: false,
+                msg: 'Use barras / , no guiones -. Formato Sirsi: MM/DD/YYYY (ej. 07/01/2024).'
+            };
+        }
+        var m = s.match(/^(\d{1,2})[\/.](\d{1,2})[\/.](\d{4})$/);
+        if (!m) {
+            return {
+                ok: false,
+                msg: 'Formato inválido. Escriba MM/DD/YYYY (mes/día/año), ej. 07/01/2024.'
+            };
+        }
+        var a = parseInt(m[1], 10);
+        var b = parseInt(m[2], 10);
+        var y = parseInt(m[3], 10);
+        if (a > 12 && b >= 1 && b <= 12) {
+            return {
+                ok: false,
+                msg: 'Parece día/mes/año. Sirsi usa mes primero: ¿quiso decir ' + mbPad2(b) + '/' + mbPad2(a) + '/' + y + '?'
+            };
+        }
+        if (a < 1 || a > 12) {
+            return { ok: false, msg: 'El mes debe ser 01–12 (formato MM/DD/YYYY; el mes va primero).' };
+        }
+        if (b < 1 || b > 31) {
+            return { ok: false, msg: 'El día debe ser 01–31.' };
+        }
+        var dim = new Date(y, a, 0).getDate();
+        if (b > dim) {
+            return { ok: false, msg: 'Ese día no existe en el mes ' + mbPad2(a) + '.' };
+        }
+        return { ok: true, sirsi: mbPad2(a) + '/' + mbPad2(b) + '/' + y };
+    }
+
+    function mbApplyDateInputValidation(textEl, boundEl, warnEl) {
+        if (!textEl) return true;
+        var v = mbValidateSirsiDateTyped(textEl.value);
+        var bad = !v.ok;
+        textEl.classList.toggle('crit-date-invalid', bad);
+        if (boundEl) boundEl.classList.toggle('has-date-error', bad);
+        if (warnEl) {
+            warnEl.textContent = bad ? (v.msg || 'Fecha inválida.') : '';
+            if (bad) textEl.title = v.msg;
+            else if (textEl._mbDateTitleBase) textEl.title = textEl._mbDateTitleBase;
+        } else if (bad) {
+            textEl.title = v.msg;
+        }
+        return !bad;
+    }
+
+    /**
+     * Rango de fechas calendario (Sirsi MM/DD/YYYY): 07/01/2024-06/30/2025, 07/01/2024-*, *-06/30/2025.
+     * Si el término es solo numérico (años/Dewey), devuelve null y sigue parseNumericRangeTerm.
+     */
+    function parseCalendarDateRangeTerm(termNorm) {
+        var s = String(termNorm || '').trim();
+        var reBound = '(\\*|(?:\\d{1,2}/\\d{1,2}/\\d{4}))';
+        var m = s.match(new RegExp('^\\s*' + reBound + '\\s*-\\s*' + reBound + '\\s*$', 'i'));
+        if (!m) return null;
+        var loRaw = m[1];
+        var hiRaw = m[2];
+        if (loRaw === '*' && hiRaw === '*') return null;
+        var min = loRaw === '*' ? -Infinity : mbParseSirsiDateToOrdinal(loRaw);
+        var max = hiRaw === '*' ? Infinity : mbParseSirsiDateToOrdinal(hiRaw);
+        if (loRaw !== '*' && !Number.isFinite(min)) return null;
+        if (hiRaw !== '*' && !Number.isFinite(max)) return null;
+        if (Number.isFinite(min) && Number.isFinite(max) && min > max) {
+            var tmp = min;
+            min = max;
+            max = tmp;
+        }
+        return { min: min, max: max, kind: 'calendar' };
+    }
+
+    /** Una sola fecha MM/DD/YYYY (modo Exacta). */
+    function parseCalendarExactTerm(termNorm) {
+        var s = String(termNorm || '').trim();
+        if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(s)) return null;
+        var ord = mbParseSirsiDateToOrdinal(s);
+        if (!Number.isFinite(ord)) return null;
+        return { min: ord, max: ord, kind: 'calendar' };
+    }
+
+    function mbMonthBoundToOrdinals(mmYyyy, asEnd) {
+        var m = String(mmYyyy || '').trim().match(/^(\d{1,2})\/(\d{4})$/);
+        if (!m) return NaN;
+        var mo = parseInt(m[1], 10);
+        var ye = parseInt(m[2], 10);
+        if (mo < 1 || mo > 12 || ye < 1000) return NaN;
+        var day = asEnd ? new Date(ye, mo, 0).getDate() : 1;
+        return ye * 10000 + mo * 100 + day;
+    }
+
+    /**
+     * Mes: 09/1998 · 07/2024-06/2025 · 07/2024-* · *-06/2025
+     */
+    function parseCalendarMonthTerm(termNorm) {
+        var s = String(termNorm || '').trim();
+        var one = s.match(/^(\d{1,2})\/(\d{4})$/);
+        if (one) {
+            var min1 = mbMonthBoundToOrdinals(one[0], false);
+            var max1 = mbMonthBoundToOrdinals(one[0], true);
+            if (!Number.isFinite(min1) || !Number.isFinite(max1)) return null;
+            return { min: min1, max: max1, kind: 'calendar' };
+        }
+        var openHi = s.match(/^(\d{1,2})\/(\d{4})\s*-\s*\*$/);
+        if (openHi) {
+            var minO = mbMonthBoundToOrdinals(openHi[1] + '/' + openHi[2], false);
+            if (!Number.isFinite(minO)) return null;
+            return { min: minO, max: Infinity, kind: 'calendar' };
+        }
+        var openLo = s.match(/^\*\s*-\s*(\d{1,2})\/(\d{4})$/);
+        if (openLo) {
+            var maxO = mbMonthBoundToOrdinals(openLo[1] + '/' + openLo[2], true);
+            if (!Number.isFinite(maxO)) return null;
+            return { min: -Infinity, max: maxO, kind: 'calendar' };
+        }
+        var rng = s.match(/^(\d{1,2})\/(\d{4})\s*-\s*(\d{1,2})\/(\d{4})$/);
+        if (rng) {
+            var a = mbMonthBoundToOrdinals(rng[1] + '/' + rng[2], false);
+            var b = mbMonthBoundToOrdinals(rng[3] + '/' + rng[4], true);
+            if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+            return { min: Math.min(a, b), max: Math.max(a, b), kind: 'calendar' };
+        }
+        return null;
+    }
+
+    function mbMonthPartsToTerm(loRaw, hiRaw) {
+        var lo = String(loRaw != null ? loRaw : '').trim();
+        var hi = String(hiRaw != null ? hiRaw : '').trim();
+        if (!lo && !hi) return '';
+        if (lo && !hi && /^\d{1,2}\/\d{4}$/.test(lo)) return lo;
+        if (!lo && hi && /^\d{1,2}\/\d{4}$/.test(hi)) return '*-' + hi;
+        if (lo === '*' && /^\d{1,2}\/\d{4}$/.test(hi)) return '*-' + hi;
+        if (/^\d{1,2}\/\d{4}$/.test(lo) && hi === '*') return lo + '-*';
+        if (/^\d{1,2}\/\d{4}$/.test(lo) && /^\d{1,2}\/\d{4}$/.test(hi)) return lo + '-' + hi;
+        return lo && hi ? lo + '-' + hi : lo || hi;
+    }
+
+    function mbMonthSplitFromTerm(s) {
+        var raw = String(s || '').trim();
+        var one = raw.match(/^(\d{1,2}\/\d{4})$/);
+        if (one) return { lo: one[1], hi: '' };
+        var openHi = raw.match(/^(\d{1,2}\/\d{4})\s*-\s*\*$/);
+        if (openHi) return { lo: openHi[1], hi: '*' };
+        var openLo = raw.match(/^\*\s*-\s*(\d{1,2}\/\d{4})$/);
+        if (openLo) return { lo: '*', hi: openLo[1] };
+        var rng = raw.match(/^(\d{1,2}\/\d{4})\s*-\s*(\d{1,2}\/\d{4})$/);
+        if (rng) return { lo: rng[1], hi: rng[2] };
+        return null;
+    }
+
+    /** Año: una casilla = ese año; dos = rango (vacío en un extremo = *). */
+    function mbYearPartsToTerm(loRaw, hiRaw) {
+        var lo = String(loRaw != null ? loRaw : '').trim();
+        var hi = String(hiRaw != null ? hiRaw : '').trim();
+        if (!lo && !hi) return '';
+        if (lo && !hi) return lo;
+        if (!lo && hi) return '*-' + hi;
+        return mbCritRangePartsToTerm(lo, hi);
+    }
+
+    function mbValidateMonthTyped(raw) {
+        var s = String(raw != null ? raw : '').trim();
+        if (!s || s === '*') return { ok: true, empty: !s };
+        var m = s.match(/^(\d{1,2})\/(\d{4})$/);
+        if (!m) {
+            return { ok: false, msg: 'Formato de mes: MM/YYYY (ej. 09/1998).' };
+        }
+        var mo = parseInt(m[1], 10);
+        var ye = parseInt(m[2], 10);
+        if (mo < 1 || mo > 12) {
+            return { ok: false, msg: 'El mes debe ser 01–12.' };
+        }
+        if (ye < 1000) {
+            return { ok: false, msg: 'Año inválido.' };
+        }
+        return { ok: true, month: mbPad2(mo) + '/' + ye };
+    }
+
+    function mbApplyMonthInputValidation(textEl, boundEl, warnEl) {
+        if (!textEl) return true;
+        var v = mbValidateMonthTyped(textEl.value);
+        var bad = !v.ok;
+        textEl.classList.toggle('crit-date-invalid', bad);
+        if (boundEl) boundEl.classList.toggle('has-date-error', bad);
+        if (warnEl) {
+            warnEl.textContent = bad ? (v.msg || 'Mes inválido.') : '';
+            if (bad) textEl.title = v.msg;
+            else if (textEl._mbDateTitleBase) textEl.title = textEl._mbDateTitleBase;
+        } else if (bad) {
+            textEl.title = v.msg;
+        }
+        return !bad;
+    }
+
+    function is999uCalendarRangeField(resolved) {
+        if (!resolved) return false;
+        if (resolved.key === 'mb:999UYear') return true;
+        var sc = resolved.subCodes || [];
+        return resolved.key === 'tags:999' && sc.length === 1 && sc[0] === 'u';
+    }
+
     /** Modo «Rangos» en criterios: dos casillas → término tipo parseNumericRangeTerm (`3-*`, `*-10`). */
     function mbCritRangeNormalizeBound(s) {
         var t = String(s != null ? s : '').trim();
         if (t === '' || t === '*') return '*';
+        var iso = mbIsoDateToSirsi(t);
+        if (iso) return iso;
         return t;
     }
 
@@ -8210,9 +8936,10 @@ Hasta 5 campos personalizados (estadísticas locales, financiación, formato fí
     }
 
     function mbCritRangeSplitFromTerm(s) {
-        var m = String(s || '')
-            .trim()
-            .match(/^\s*(\*|-?\d+(?:\.\d+)?)\s*-\s*(\*|-?\d+(?:\.\d+)?)\s*$/);
+        var raw = String(s || '').trim();
+        var mCal = raw.match(/^\s*(\*|\d{1,2}\/\d{1,2}\/\d{4})\s*-\s*(\*|\d{1,2}\/\d{1,2}\/\d{4})\s*$/i);
+        if (mCal) return { lo: mCal[1], hi: mCal[2] };
+        var m = raw.match(/^\s*(\*|-?\d+(?:\.\d+)?)\s*-\s*(\*|-?\d+(?:\.\d+)?)\s*$/);
         if (!m) return null;
         return { lo: m[1], hi: m[2] };
     }
@@ -8257,7 +8984,7 @@ Hasta 5 campos personalizados (estadísticas locales, financiación, formato fí
         var sc = resolved.subCodes || [];
         if (resolved.key === 'bib:yearTable' || resolved.key === 'mb:999UYear' || resolved.key === 'mb:ejemplaresFiltrados') return true;
         if (is999aDeweyStartRange(resolved) || is092DeweyStartRange(resolved) || is082DeweyStartRange(resolved)) return true;
-        if (resolved.key === 'tags:999' && sc.length === 1 && sc[0] === 'n') return true;
+        if (resolved.key === 'tags:999' && sc.length === 1 && (sc[0] === 'n' || sc[0] === 'u')) return true;
         return false;
     }
 
@@ -9049,9 +9776,25 @@ Hasta 5 campos personalizados (estadísticas locales, financiación, formato fí
             return false;
         }
         var candidates = criterionCandidatesNormalized(fields, brief, criterion, scopeTop, ejCountForMb);
+        var resolvedR0 = criterion._resolved || resolveCriterionFieldAndSubs(criterion);
+        var calMatch = null;
+        if (is999uCalendarRangeField(resolvedR0)) {
+            calMatch =
+                parseCalendarDateRangeTerm(term) ||
+                parseCalendarMonthTerm(term) ||
+                parseCalendarExactTerm(term);
+        }
+        if (calMatch) {
+            for (var ci = 0; ci < candidates.length; ci++) {
+                var ordU = mbParseSirsiDateToOrdinal(candidates[ci]);
+                if (!Number.isFinite(ordU)) continue;
+                if (ordU >= calMatch.min && ordU <= calMatch.max) return true;
+            }
+            return false;
+        }
         var range = parseNumericRangeTerm(term);
         if (range) {
-            var resolvedR = criterion._resolved || resolveCriterionFieldAndSubs(criterion);
+            var resolvedR = resolvedR0;
             var scR = resolvedR.subCodes || [];
             /** Recuento de líneas 999 que pasan el resto de criterios (entero). */
             if (resolvedR.key === 'mb:ejemplaresFiltrados') {
@@ -9415,6 +10158,7 @@ if (!groupStates || !groupStates.length) {
                 sel.value = '';
                 mbSyncCritFieldCopyBtnFromSelect(sel);
                 mbSyncCritFieldTitleFromSub(sel);
+                if (typeof sel._mbComboSync === 'function') sel._mbComboSync();
                 return;
             }
             var prev = sel.value != null ? String(sel.value) : '';
@@ -9427,7 +10171,509 @@ if (!groupStates || !groupStates.length) {
                 sel.dispatchEvent(new Event('change', { bubbles: true }));
             }
             mbSyncCritFieldTitleFromSub(sel);
+            if (typeof sel._mbComboSync === 'function') sel._mbComboSync();
         });
+    }
+
+    var MB_CAL_MONTHS_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    var MB_CAL_MONTHS_SHORT = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    var MB_CAL_WD_ES = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
+    var mbCalState = {
+        el: null,
+        viewY: 0,
+        viewM: 0,
+        selectedOrd: NaN,
+        selectedMonthKey: NaN, // YYYYMM cuando pickKind === 'month'
+        onPick: null,
+        anchor: null,
+        mode: 'days', // days | months | years
+        pickKind: 'day', // day | month
+        yearPageStart: 0
+    };
+
+    function mbCalInvokePick(sirsi) {
+        var cb = mbCalState.onPick;
+        mbCloseStyledCalendar();
+        if (typeof cb === 'function') cb(sirsi);
+    }
+
+    function mbEnsureStyledCalendar() {
+        if (mbCalState.el && mbCalState.el.querySelector && mbCalState.el.querySelector('[data-cal-days-view]')) {
+            return mbCalState.el;
+        }
+        if (mbCalState.el && mbCalState.el.parentNode) {
+            mbCalState.el.parentNode.removeChild(mbCalState.el);
+        }
+        mbCalState.el = null;
+        var pop = document.createElement('div');
+        pop.id = 'mbStyledCal';
+        pop.className = 'mb-cal-pop';
+        pop.setAttribute('hidden', '');
+        pop.setAttribute('role', 'dialog');
+        pop.setAttribute('aria-label', 'Calendario');
+        pop.innerHTML =
+            '<div class="mb-cal-head">' +
+            '<button type="button" class="mb-cal-nav" data-cal-nav="-1" aria-label="Anterior">‹</button>' +
+            '<div class="mb-cal-title">' +
+            '<button type="button" class="mb-cal-title-btn" data-cal-pick-month title="Elegir mes">mes</button>' +
+            '<button type="button" class="mb-cal-title-btn" data-cal-pick-year title="Elegir año">año</button>' +
+            '</div>' +
+            '<button type="button" class="mb-cal-nav" data-cal-nav="1" aria-label="Siguiente">›</button>' +
+            '</div>' +
+            '<div class="mb-cal-body" data-cal-body>' +
+            '<div class="mb-cal-body-days" data-cal-days-view>' +
+            '<div class="mb-cal-week" data-cal-week></div>' +
+            '<div class="mb-cal-grid" data-cal-days></div>' +
+            '</div>' +
+            '<div class="mb-cal-body-pick mb-cal-pick-wrap" data-cal-pick hidden></div>' +
+            '</div>' +
+            '<div class="mb-cal-foot">' +
+            '<button type="button" data-cal-today>Hoy</button>' +
+            '<button type="button" data-cal-clear>Limpiar</button>' +
+            '</div>';
+        var week = pop.querySelector('[data-cal-week]');
+        for (var w = 0; w < 7; w++) {
+            var wd = document.createElement('div');
+            wd.className = 'mb-cal-wd';
+            wd.textContent = MB_CAL_WD_ES[w];
+            week.appendChild(wd);
+        }
+        document.body.appendChild(pop);
+        pop.addEventListener('click', function (ev) {
+            ev.stopPropagation();
+        });
+        pop.querySelector('[data-cal-nav="-1"]').addEventListener('click', function () {
+            if (mbCalState.mode === 'years') {
+                mbCalState.yearPageStart -= 12;
+                mbRenderStyledCalendar();
+                return;
+            }
+            if (mbCalState.mode === 'months') {
+                mbCalState.viewY -= 1;
+                mbRenderStyledCalendar();
+                return;
+            }
+            mbCalState.viewM -= 1;
+            if (mbCalState.viewM < 0) {
+                mbCalState.viewM = 11;
+                mbCalState.viewY -= 1;
+            }
+            mbRenderStyledCalendar();
+        });
+        pop.querySelector('[data-cal-nav="1"]').addEventListener('click', function () {
+            if (mbCalState.mode === 'years') {
+                mbCalState.yearPageStart += 12;
+                mbRenderStyledCalendar();
+                return;
+            }
+            if (mbCalState.mode === 'months') {
+                mbCalState.viewY += 1;
+                mbRenderStyledCalendar();
+                return;
+            }
+            mbCalState.viewM += 1;
+            if (mbCalState.viewM > 11) {
+                mbCalState.viewM = 0;
+                mbCalState.viewY += 1;
+            }
+            mbRenderStyledCalendar();
+        });
+        pop.querySelector('[data-cal-pick-month]').addEventListener('click', function () {
+            if (mbCalState.pickKind === 'month') {
+                mbCalState.mode = mbCalState.mode === 'years' ? 'months' : 'years';
+                if (mbCalState.mode === 'years') {
+                    mbCalState.yearPageStart = Math.floor(mbCalState.viewY / 12) * 12;
+                }
+            } else {
+                mbCalState.mode = mbCalState.mode === 'months' ? 'days' : 'months';
+            }
+            mbRenderStyledCalendar();
+        });
+        pop.querySelector('[data-cal-pick-year]').addEventListener('click', function () {
+            if (mbCalState.mode === 'years') {
+                mbCalState.mode = mbCalState.pickKind === 'month' ? 'months' : 'days';
+            } else {
+                mbCalState.mode = 'years';
+                mbCalState.yearPageStart = Math.floor(mbCalState.viewY / 12) * 12;
+            }
+            mbRenderStyledCalendar();
+        });
+        pop.querySelector('[data-cal-today]').addEventListener('click', function () {
+            var now = new Date();
+            if (mbCalState.pickKind === 'month') {
+                mbCalInvokePick(mbPad2(now.getMonth() + 1) + '/' + now.getFullYear());
+                return;
+            }
+            var sirsi = mbPad2(now.getMonth() + 1) + '/' + mbPad2(now.getDate()) + '/' + now.getFullYear();
+            mbCalInvokePick(sirsi);
+        });
+        pop.querySelector('[data-cal-clear]').addEventListener('click', function () {
+            mbCalInvokePick('');
+        });
+        document.addEventListener('mousedown', function (ev) {
+            if (!mbCalState.el || mbCalState.el.hasAttribute('hidden')) return;
+            if (mbCalState.el.contains(ev.target)) return;
+            if (mbCalState.anchor && mbCalState.anchor.contains && mbCalState.anchor.contains(ev.target)) return;
+            mbCloseStyledCalendar();
+        });
+        document.addEventListener('keydown', function (ev) {
+            if (ev.key !== 'Escape') return;
+            if (!mbCalState.el || mbCalState.el.hasAttribute('hidden')) return;
+            if (mbCalState.pickKind === 'month') {
+                if (mbCalState.mode === 'years') {
+                    mbCalState.mode = 'months';
+                    mbRenderStyledCalendar();
+                } else {
+                    mbCloseStyledCalendar();
+                }
+                return;
+            }
+            if (mbCalState.mode === 'months' || mbCalState.mode === 'years') {
+                mbCalState.mode = 'days';
+                mbRenderStyledCalendar();
+            } else {
+                mbCloseStyledCalendar();
+            }
+        });
+        mbCalState.el = pop;
+        return pop;
+    }
+
+    function mbRenderStyledCalendar() {
+        var pop = mbEnsureStyledCalendar();
+        var btnMonth = pop.querySelector('[data-cal-pick-month]');
+        var btnYear = pop.querySelector('[data-cal-pick-year]');
+        var daysView = pop.querySelector('[data-cal-days-view]');
+        var days = pop.querySelector('[data-cal-days]');
+        var pick = pop.querySelector('[data-cal-pick]');
+        btnMonth.textContent = MB_CAL_MONTHS_ES[mbCalState.viewM];
+        btnYear.textContent = String(mbCalState.viewY);
+        btnMonth.classList.toggle('is-open', mbCalState.mode === 'months');
+        btnYear.classList.toggle('is-open', mbCalState.mode === 'years');
+
+        function showPickReplaceDays() {
+            daysView.setAttribute('hidden', '');
+            pick.removeAttribute('hidden');
+        }
+        function showDaysReplacePick() {
+            pick.setAttribute('hidden', '');
+            pick.innerHTML = '';
+            daysView.removeAttribute('hidden');
+        }
+
+        if (mbCalState.mode === 'months') {
+            showPickReplaceDays();
+            pick.innerHTML = '';
+            var gM = document.createElement('div');
+            gM.className = 'mb-cal-pick-grid';
+            var now = new Date();
+            for (var mi = 0; mi < 12; mi++) {
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'mb-cal-pick-item';
+                b.textContent = MB_CAL_MONTHS_SHORT[mi];
+                var monthKey = mbCalState.viewY * 100 + (mi + 1);
+                if (Number.isFinite(mbCalState.selectedMonthKey) && monthKey === mbCalState.selectedMonthKey) {
+                    b.classList.add('is-selected');
+                } else if (mbCalState.pickKind !== 'month' && mi === mbCalState.viewM) {
+                    b.classList.add('is-selected');
+                }
+                if (mi === now.getMonth() && mbCalState.viewY === now.getFullYear()) b.classList.add('is-current');
+                b.addEventListener('click', function (monthIdx) {
+                    return function () {
+                        mbCalState.viewM = monthIdx;
+                        if (mbCalState.pickKind === 'month') {
+                            mbCalInvokePick(mbPad2(monthIdx + 1) + '/' + mbCalState.viewY);
+                            return;
+                        }
+                        mbCalState.mode = 'days';
+                        mbRenderStyledCalendar();
+                    };
+                }(mi));
+                gM.appendChild(b);
+            }
+            pick.appendChild(gM);
+            return;
+        }
+
+        if (mbCalState.mode === 'years') {
+            showPickReplaceDays();
+            pick.innerHTML = '';
+            var navY = document.createElement('div');
+            navY.className = 'mb-cal-year-nav';
+            navY.innerHTML =
+                '<button type="button" data-y-prev>« ' + (mbCalState.yearPageStart - 12) + '–' + (mbCalState.yearPageStart - 1) + '</button>' +
+                '<button type="button" data-y-next>' + (mbCalState.yearPageStart + 12) + '–' + (mbCalState.yearPageStart + 23) + ' »</button>';
+            navY.querySelector('[data-y-prev]').addEventListener('click', function () {
+                mbCalState.yearPageStart -= 12;
+                mbRenderStyledCalendar();
+            });
+            navY.querySelector('[data-y-next]').addEventListener('click', function () {
+                mbCalState.yearPageStart += 12;
+                mbRenderStyledCalendar();
+            });
+            pick.appendChild(navY);
+            var gY = document.createElement('div');
+            gY.className = 'mb-cal-pick-grid is-years';
+            var nowY = new Date().getFullYear();
+            for (var yi = 0; yi < 12; yi++) {
+                var year = mbCalState.yearPageStart + yi;
+                var by = document.createElement('button');
+                by.type = 'button';
+                by.className = 'mb-cal-pick-item';
+                by.textContent = String(year);
+                if (year === mbCalState.viewY) by.classList.add('is-selected');
+                if (year === nowY) by.classList.add('is-current');
+                by.addEventListener('click', function (yr) {
+                    return function () {
+                        mbCalState.viewY = yr;
+                        mbCalState.mode = mbCalState.pickKind === 'month' ? 'months' : 'days';
+                        mbRenderStyledCalendar();
+                    };
+                }(year));
+                gY.appendChild(by);
+            }
+            pick.appendChild(gY);
+            return;
+        }
+
+        if (mbCalState.pickKind === 'month') {
+            mbCalState.mode = 'months';
+            mbRenderStyledCalendar();
+            return;
+        }
+
+        showDaysReplacePick();
+        days.innerHTML = '';
+        var first = new Date(mbCalState.viewY, mbCalState.viewM, 1);
+        var startDow = (first.getDay() + 6) % 7;
+        var start = new Date(mbCalState.viewY, mbCalState.viewM, 1 - startDow);
+        var today = new Date();
+        var todayOrd = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
+        for (var i = 0; i < 42; i++) {
+            var d = new Date(start.getFullYear(), start.getMonth(), start.getDate() + i);
+            var y = d.getFullYear();
+            var m = d.getMonth() + 1;
+            var day = d.getDate();
+            var ord = y * 10000 + m * 100 + day;
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'mb-cal-day';
+            btn.textContent = String(day);
+            if (d.getMonth() !== mbCalState.viewM) btn.classList.add('is-other');
+            if (ord === todayOrd) btn.classList.add('is-today');
+            if (Number.isFinite(mbCalState.selectedOrd) && ord === mbCalState.selectedOrd) btn.classList.add('is-selected');
+            btn.addEventListener('click', function (yy, mm, dd) {
+                return function () {
+                    mbCalInvokePick(mbPad2(mm) + '/' + mbPad2(dd) + '/' + yy);
+                };
+            }(y, m, day));
+            days.appendChild(btn);
+        }
+    }
+
+    function mbCloseStyledCalendar() {
+        if (!mbCalState.el) return;
+        mbCalState.el.setAttribute('hidden', '');
+        mbCalState.onPick = null;
+        mbCalState.anchor = null;
+        mbCalState.mode = 'days';
+        mbCalState.pickKind = 'day';
+        mbCalState.selectedMonthKey = NaN;
+    }
+
+    function mbOpenStyledCalendar(anchorEl, currentValue, onPick, opts) {
+        opts = opts || {};
+        var pickKind = opts.pickKind === 'month' ? 'month' : 'day';
+        var pop = mbEnsureStyledCalendar();
+        pop.setAttribute('aria-label', pickKind === 'month' ? 'Elegir mes' : 'Calendario');
+        var now = new Date();
+        mbCalState.pickKind = pickKind;
+        mbCalState.selectedMonthKey = NaN;
+        mbCalState.selectedOrd = NaN;
+
+        if (pickKind === 'month') {
+            var mm = String(currentValue || '').trim().match(/^(\d{1,2})\/(\d{4})$/);
+            if (mm) {
+                var mo = parseInt(mm[1], 10);
+                var ye = parseInt(mm[2], 10);
+                if (mo >= 1 && mo <= 12 && ye >= 1000) {
+                    mbCalState.viewY = ye;
+                    mbCalState.viewM = mo - 1;
+                    mbCalState.selectedMonthKey = ye * 100 + mo;
+                } else {
+                    mbCalState.viewY = now.getFullYear();
+                    mbCalState.viewM = now.getMonth();
+                }
+            } else {
+                mbCalState.viewY = now.getFullYear();
+                mbCalState.viewM = now.getMonth();
+            }
+            mbCalState.mode = 'months';
+        } else {
+            var ord = mbParseSirsiDateToOrdinal(currentValue);
+            if (!Number.isFinite(ord)) {
+                var iso = String(currentValue || '').trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(iso)) {
+                    ord = mbParseSirsiDateToOrdinal(mbIsoDateToSirsi(iso));
+                }
+            }
+            if (Number.isFinite(ord)) {
+                mbCalState.viewY = Math.floor(ord / 10000);
+                mbCalState.viewM = Math.floor((ord % 10000) / 100) - 1;
+                mbCalState.selectedOrd = ord;
+            } else {
+                mbCalState.viewY = now.getFullYear();
+                mbCalState.viewM = now.getMonth();
+            }
+            mbCalState.mode = 'days';
+        }
+        mbCalState.yearPageStart = Math.floor(mbCalState.viewY / 12) * 12;
+        mbCalState.onPick = onPick;
+        mbCalState.anchor = anchorEl;
+        mbRenderStyledCalendar();
+        pop.removeAttribute('hidden');
+        var rect = anchorEl.getBoundingClientRect();
+        var top = rect.bottom + 6;
+        var left = rect.left;
+        if (left + 288 > window.innerWidth - 8) left = Math.max(8, window.innerWidth - 296);
+        if (top + 380 > window.innerHeight - 8) top = Math.max(8, rect.top - 386);
+        pop.style.top = Math.round(top) + 'px';
+        pop.style.left = Math.round(left) + 'px';
+    }
+
+    function mbEnhanceCritFieldSelect(selF, fieldWrap) {
+        selF.classList.add('crit-field-native-sr');
+        selF.setAttribute('aria-hidden', 'true');
+        selF.tabIndex = -1;
+
+        var combo = document.createElement('div');
+        combo.className = 'crit-field-combo';
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'crit-field-combo-btn';
+        btn.setAttribute('aria-haspopup', 'listbox');
+        btn.setAttribute('aria-expanded', 'false');
+        var panel = document.createElement('div');
+        panel.className = 'crit-field-combo-panel';
+        panel.setAttribute('hidden', '');
+        panel.setAttribute('role', 'listbox');
+        var search = document.createElement('input');
+        search.type = 'search';
+        search.className = 'crit-field-combo-search';
+        search.setAttribute('autocomplete', 'off');
+        search.setAttribute('spellcheck', 'false');
+        search.placeholder = 'Buscar campo… (ej. fecha, dewey, 999)';
+        search.setAttribute('aria-label', 'Filtrar campos del menú');
+        var list = document.createElement('div');
+        list.className = 'crit-field-combo-list';
+        panel.appendChild(search);
+        panel.appendChild(list);
+        combo.appendChild(btn);
+        combo.appendChild(panel);
+        fieldWrap.insertBefore(combo, selF);
+
+        function syncLabel() {
+            var opt = selF.options[selF.selectedIndex];
+            var lab = opt ? String(opt.textContent || '').trim() : 'Seleccionar';
+            btn.textContent = lab || 'Seleccionar';
+            combo.classList.toggle('is-overridden', selF.classList.contains('overridden-by-inline'));
+            btn.title = selF.title || '';
+        }
+
+        function closePanel() {
+            panel.setAttribute('hidden', '');
+            btn.setAttribute('aria-expanded', 'false');
+            search.value = '';
+        }
+
+        function openPanel() {
+            renderList('');
+            panel.removeAttribute('hidden');
+            btn.setAttribute('aria-expanded', 'true');
+            setTimeout(function () {
+                search.focus();
+                search.select();
+            }, 0);
+        }
+
+        function renderList(qRaw) {
+            var q = normalizeForFind(qRaw || '');
+            list.innerHTML = '';
+            var shown = 0;
+            var activeIdx = -1;
+            for (var i = 0; i < selF.options.length; i++) {
+                var o = selF.options[i];
+                var label = String(o.textContent || '');
+                var hay = normalizeForFind(label + ' ' + (o.value || ''));
+                if (q && hay.indexOf(q) === -1) continue;
+                var b = document.createElement('button');
+                b.type = 'button';
+                b.className = 'crit-field-combo-opt';
+                b.setAttribute('role', 'option');
+                b.dataset.value = o.value;
+                b.textContent = label;
+                if (/^(mb:|bib:|smart:)/.test(String(o.value || ''))) b.classList.add('is-smart');
+                if (o.selected) {
+                    b.classList.add('is-selected');
+                    activeIdx = shown;
+                }
+                b.addEventListener('click', function (val) {
+                    return function () {
+                        selF.value = val;
+                        selF.dispatchEvent(new Event('change', { bubbles: true }));
+                        syncLabel();
+                        closePanel();
+                    };
+                }(o.value));
+                list.appendChild(b);
+                shown++;
+            }
+            if (!shown) {
+                var empty = document.createElement('div');
+                empty.className = 'crit-field-combo-empty';
+                empty.textContent = 'Sin coincidencias para «' + String(qRaw || '').trim() + '»';
+                list.appendChild(empty);
+            }
+            return activeIdx;
+        }
+
+        btn.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            if (panel.hasAttribute('hidden')) openPanel();
+            else closePanel();
+        });
+        search.addEventListener('input', function () {
+            renderList(search.value);
+        });
+        search.addEventListener('keydown', function (ev) {
+            if (ev.key === 'Escape') {
+                ev.preventDefault();
+                closePanel();
+                btn.focus();
+            } else if (ev.key === 'Enter') {
+                ev.preventDefault();
+                var first = list.querySelector('.crit-field-combo-opt');
+                if (first) first.click();
+            }
+        });
+        document.addEventListener('mousedown', function (ev) {
+            if (panel.hasAttribute('hidden')) return;
+            if (combo.contains(ev.target)) return;
+            closePanel();
+        });
+
+        selF._mbComboSync = function () {
+            syncLabel();
+            if (!panel.hasAttribute('hidden')) renderList(search.value);
+        };
+        var mo = new MutationObserver(function () {
+            combo.classList.toggle('is-overridden', selF.classList.contains('overridden-by-inline'));
+            btn.title = selF.title || '';
+        });
+        mo.observe(selF, { attributes: true, attributeFilter: ['class', 'title'] });
+        syncLabel();
+        return combo;
     }
 
     function createConnector(row, connectorOrdinal) {
@@ -9551,6 +10797,7 @@ if (!groupStates || !groupStates.length) {
         subStack.appendChild(sub);
 
         fieldWrap.appendChild(selF);
+        mbEnhanceCritFieldSelect(selF, fieldWrap);
         fieldWrap.appendChild(btnCopyFieldLabel);
         fields.appendChild(fieldWrap);
         fields.appendChild(subStack);
@@ -9566,9 +10813,25 @@ if (!groupStates || !groupStates.length) {
         btnRange.type = 'button';
         btnRange.className = 'crit-range-toggle';
         btnRange.textContent = '(Rangos)';
-        btnRange.title = 'Dos casillas: inicio y fin. * = sin límite en ese extremo (como en 3-* o *-2010).';
+        btnRange.title = 'Texto = una casilla · Rangos = inicio y fin.';
+        var selDateMode = document.createElement('select');
+        selDateMode.className = 'crit-date-mode';
+        selDateMode.setAttribute('aria-label', 'Unidad de fecha');
+        selDateMode.title = 'Día · Mes · Año';
+        [
+            ['dia', 'Día'],
+            ['mes', 'Mes'],
+            ['ano', 'Año']
+        ].forEach(function (pair) {
+            var o = document.createElement('option');
+            o.value = pair[0];
+            o.textContent = pair[1];
+            selDateMode.appendChild(o);
+        });
+        selDateMode.value = 'dia';
         var termHeadText = document.createElement('span');
         termHeadText.textContent = 'Término de búsqueda';
+        termHeadLeft.appendChild(selDateMode);
         termHeadLeft.appendChild(btnRange);
         termHeadLeft.appendChild(termHeadText);
         termHead.appendChild(termHeadLeft);
@@ -9602,32 +10865,72 @@ if (!groupStates || !groupStates.length) {
         chkExact.addEventListener('change', syncExactChipFromCheckbox);
         syncExactChipFromCheckbox();
 
+        var btnCalExact = document.createElement('button');
+        btnCalExact.type = 'button';
+        btnCalExact.className = 'mb-cal-open-btn crit-term-cal-exact';
+        btnCalExact.title = 'Abrir calendario';
+        btnCalExact.setAttribute('aria-label', 'Abrir calendario para fecha exacta');
+        btnCalExact.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v10h16V10zm-3 2v2h-2v-2h2zm-4 0v2h-2v-2h2zm-4 0v2H7v-2h2z"/></svg>';
+
         var termInputsWrap = document.createElement('div');
         termInputsWrap.className = 'crit-term-inputs';
         var termSingleWrap = document.createElement('div');
         termSingleWrap.className = 'crit-term-single-wrap';
         termSingleWrap.appendChild(term);
+        termSingleWrap.appendChild(btnCalExact);
         termSingleWrap.appendChild(chkExact);
         termSingleWrap.appendChild(btnExactChip);
+        var warnExact = document.createElement('div');
+        warnExact.className = 'crit-date-warn';
+        warnExact.setAttribute('role', 'status');
+        termSingleWrap.appendChild(warnExact);
         var termRangeWrap = document.createElement('div');
         termRangeWrap.className = 'crit-term-range-wrap';
         termRangeWrap.setAttribute('hidden', '');
+        var boundLo = document.createElement('div');
+        boundLo.className = 'crit-range-bound';
         var termLo = document.createElement('input');
         termLo.type = 'text';
         termLo.className = 'inp-term-wide crit-term-lo';
         termLo.setAttribute('autocomplete', 'off');
         termLo.placeholder = 'Inicio (número o *)';
+        var btnCalLo = document.createElement('button');
+        btnCalLo.type = 'button';
+        btnCalLo.className = 'mb-cal-open-btn';
+        btnCalLo.title = 'Abrir calendario (inicio)';
+        btnCalLo.setAttribute('aria-label', 'Abrir calendario fecha de inicio');
+        btnCalLo.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v10h16V10zm-3 2v2h-2v-2h2zm-4 0v2h-2v-2h2zm-4 0v2H7v-2h2z"/></svg>';
+        boundLo.appendChild(termLo);
+        boundLo.appendChild(btnCalLo);
+        var warnLo = document.createElement('div');
+        warnLo.className = 'crit-date-warn';
+        warnLo.setAttribute('role', 'status');
+        boundLo.appendChild(warnLo);
         var rangeDash = document.createElement('span');
         rangeDash.className = 'crit-range-dash';
         rangeDash.textContent = '\u2014';
+        var boundHi = document.createElement('div');
+        boundHi.className = 'crit-range-bound';
         var termHi = document.createElement('input');
         termHi.type = 'text';
         termHi.className = 'inp-term-wide crit-term-hi';
         termHi.setAttribute('autocomplete', 'off');
         termHi.placeholder = 'Fin (número o *)';
-        termRangeWrap.appendChild(termLo);
+        var btnCalHi = document.createElement('button');
+        btnCalHi.type = 'button';
+        btnCalHi.className = 'mb-cal-open-btn';
+        btnCalHi.title = 'Abrir calendario (fin)';
+        btnCalHi.setAttribute('aria-label', 'Abrir calendario fecha de fin');
+        btnCalHi.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 2h2v2h6V2h2v2h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h3V2zm13 8H4v10h16V10zm-3 2v2h-2v-2h2zm-4 0v2h-2v-2h2zm-4 0v2H7v-2h2z"/></svg>';
+        boundHi.appendChild(termHi);
+        boundHi.appendChild(btnCalHi);
+        var warnHi = document.createElement('div');
+        warnHi.className = 'crit-date-warn';
+        warnHi.setAttribute('role', 'status');
+        boundHi.appendChild(warnHi);
+        termRangeWrap.appendChild(boundLo);
         termRangeWrap.appendChild(rangeDash);
-        termRangeWrap.appendChild(termHi);
+        termRangeWrap.appendChild(boundHi);
         termInputsWrap.appendChild(termSingleWrap);
         termInputsWrap.appendChild(termRangeWrap);
         termWrap.appendChild(termHead);
@@ -9636,36 +10939,342 @@ if (!groupStates || !groupStates.length) {
         rangeWarning.className = 'crit-range-warning';
         rangeWarning.textContent = 'Advertencia: este campo no está diseñado para búsquedas por rango. Se ejecutará igualmente, pero puede recuperar resultados inesperados.';
         termWrap.appendChild(rangeWarning);
+        var calHint = document.createElement('div');
+        calHint.className = 'crit-range-cal-hint';
+        calHint.textContent = 'Calendario: clic en el mes o el año del título para saltar rápido. Hoy/Limpiar abajo. 1.º clic casilla = calendario; 2.º = escribir a mano (MM/DD/YYYY). Si el formato es incorrecto, el texto sale en rojo.';
+        termWrap.appendChild(calHint);
+
+        function mbCritResolvedForUi() {
+            return resolveCriterionFieldAndSubs({
+                key: effectiveCriterionKey(selF.value, lineIdx, sub.value),
+                sub: sub.value
+            });
+        }
+
+        function mbCritWantsCalendarRangeUi() {
+            return is999uCalendarRangeField(mbCritResolvedForUi());
+        }
+
+        function mbIsCalOpenFor(anchorEl) {
+            return !!(mbCalState.el && !mbCalState.el.hasAttribute('hidden') && mbCalState.anchor === anchorEl);
+        }
+
+        function mbOpenBoundCalendar(textEl, anchorEl) {
+            var monthPick = block.classList.contains('crit-date-mode-mes');
+            mbOpenStyledCalendar(
+                anchorEl || textEl,
+                textEl.value,
+                function (sirsi) {
+                    textEl.value = sirsi;
+                    if (monthPick) {
+                        if (textEl === term) mbApplyMonthInputValidation(term, termSingleWrap, warnExact);
+                        else if (textEl === termLo) mbApplyMonthInputValidation(termLo, boundLo, warnLo);
+                        else mbApplyMonthInputValidation(termHi, boundHi, warnHi);
+                    } else if (textEl === term) {
+                        mbApplyDateInputValidation(term, termSingleWrap, warnExact);
+                    } else if (textEl === termLo) {
+                        mbApplyDateInputValidation(termLo, boundLo, warnLo);
+                    } else {
+                        mbApplyDateInputValidation(termHi, boundHi, warnHi);
+                    }
+                    mbRefreshRangeWarning();
+                    textEl.focus();
+                },
+                { pickKind: monthPick ? 'month' : 'day' }
+            );
+        }
+
+        /** Clic en casilla: 1.º abre calendario; 2.º lo cierra y deja escribir a mano. */
+        function mbToggleBoundCalendarOrType(textEl, anchorEl) {
+            if (!mbBoundAllowsCalendar(textEl)) return;
+            if (mbIsCalOpenFor(anchorEl)) {
+                mbCloseStyledCalendar();
+                textEl.focus();
+                try {
+                    var len = String(textEl.value || '').length;
+                    textEl.setSelectionRange(len, len);
+                } catch (eSel) { /* ignore */ }
+                return;
+            }
+            mbOpenBoundCalendar(textEl, anchorEl);
+        }
+
+        function mbClearBoundDateErrors() {
+            [term, termLo, termHi].forEach(function (el) {
+                if (!el) return;
+                el.classList.remove('crit-date-invalid');
+                el.title = el._mbDateTitleBase || '';
+            });
+            [boundLo, boundHi, termSingleWrap].forEach(function (el) {
+                if (el) el.classList.remove('has-date-error');
+            });
+            warnLo.textContent = '';
+            warnHi.textContent = '';
+            warnExact.textContent = '';
+        }
+
+        function mbApplyCalendarInputs(enable) {
+            var curLo = String(termLo.value || '').trim();
+            var curHi = String(termHi.value || '').trim();
+            if (/^\d{4}-\d{2}-\d{2}$/.test(curLo)) termLo.value = mbIsoDateToSirsi(curLo) || curLo;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(curHi)) termHi.value = mbIsoDateToSirsi(curHi) || curHi;
+            termLo.type = 'text';
+            termHi.type = 'text';
+            termLo.readOnly = false;
+            termHi.readOnly = false;
+            if (enable) {
+                termLo.placeholder = termLo._mbPhLo || 'MM/DD/YYYY inicio';
+                termHi.placeholder = termHi._mbPhHi || 'MM/DD/YYYY fin';
+                termLo._mbDateTitleBase = '1.º clic: calendario · 2.º clic: escribir a mano (MM/DD/YYYY)';
+                termHi._mbDateTitleBase = '1.º clic: calendario · 2.º clic: escribir a mano (MM/DD/YYYY)';
+                termLo.title = termLo._mbDateTitleBase;
+                termHi.title = termHi._mbDateTitleBase;
+                mbApplyDateInputValidation(termLo, boundLo, warnLo);
+                mbApplyDateInputValidation(termHi, boundHi, warnHi);
+            } else {
+                termLo.placeholder = termLo._mbPhLo || 'Inicio (número o *)';
+                termHi.placeholder = termHi._mbPhHi || 'Fin (número o *)';
+                termLo.title = '';
+                termHi.title = '';
+                termLo._mbDateTitleBase = '';
+                termHi._mbDateTitleBase = '';
+            }
+        }
+
+        /** Unidad del menú: dia | mes | ano (solo en campo 999 $u). */
+        function mbGetDateUnit() {
+            if (!block.classList.contains('crit-has-date-modes')) return null;
+            var u = selDateMode.value || 'dia';
+            return u === 'mes' || u === 'ano' ? u : 'dia';
+        }
+
+        function mbCritBuildTermFromUi() {
+            var unit = mbGetDateUnit();
+            var ranged = block.classList.contains('crit-term-range-mode');
+            if (unit === 'mes') {
+                return ranged ? mbMonthPartsToTerm(termLo.value, termHi.value) : String(term.value || '').trim();
+            }
+            if (unit === 'ano') {
+                return ranged ? mbYearPartsToTerm(termLo.value, termHi.value) : String(term.value || '').trim();
+            }
+            if (unit === 'dia') {
+                return ranged ? mbCritRangePartsToTerm(termLo.value, termHi.value) : String(term.value || '').trim();
+            }
+            if (ranged) return mbCritRangePartsToTerm(termLo.value, termHi.value);
+            return term.value;
+        }
+
+        /**
+         * Clases de presentación derivadas de Día/Mes/Año + Texto/Rangos.
+         * exacta = día + una casilla; rango = día + dos; mes/ano según unidad.
+         */
+        function mbCritSyncDateClasses() {
+            var hasCal = mbCritWantsCalendarRangeUi();
+            block.classList.toggle('crit-has-date-modes', hasCal);
+            var unit = hasCal ? mbGetDateUnit() : null;
+            var ranged = block.classList.contains('crit-term-range-mode');
+            var present = 'texto';
+            if (hasCal) {
+                if (unit === 'mes') present = 'mes';
+                else if (unit === 'ano') present = 'ano';
+                else present = ranged ? 'rango' : 'exacta';
+            } else {
+                present = ranged ? 'rango' : 'texto';
+            }
+            ['texto', 'exacta', 'mes', 'ano', 'rango'].forEach(function (m) {
+                block.classList.toggle('crit-date-mode-' + m, present === m);
+            });
+            block.classList.toggle('crit-calendar-range-mode', hasCal && unit === 'dia' && ranged);
+            block.classList.toggle('crit-calendar-month-mode', hasCal && unit === 'mes');
+            return { hasCal: hasCal, unit: unit, ranged: ranged, present: present };
+        }
+
+        function mbCritApplyRangeMode(on) {
+            if (on) {
+                block.classList.add('crit-term-range-mode');
+                termRangeWrap.removeAttribute('hidden');
+                btnRange.textContent = '(Texto)';
+            } else {
+                block.classList.remove('crit-term-range-mode');
+                termRangeWrap.setAttribute('hidden', '');
+                btnRange.textContent = '(Rangos)';
+            }
+            mbRefreshCritTermPlaceholder();
+            mbRefreshRangeWarning();
+        }
+
+        /** Aplica unidad (dia/mes/ano) y opcionalmente fuerza Texto/Rangos. */
+        function mbCritApplyDateUnit(unit, forceRange) {
+            var hasCal = mbCritWantsCalendarRangeUi();
+            block.classList.toggle('crit-has-date-modes', hasCal);
+            if (hasCal) {
+                if (unit === 'exacta' || unit === 'rango' || unit === 'texto') {
+                    /* legado */
+                    if (unit === 'rango') {
+                        selDateMode.value = 'dia';
+                        forceRange = true;
+                    } else if (unit === 'exacta') {
+                        selDateMode.value = 'dia';
+                        forceRange = false;
+                    } else {
+                        selDateMode.value = 'dia';
+                        forceRange = false;
+                    }
+                } else {
+                    selDateMode.value = unit === 'mes' || unit === 'ano' ? unit : 'dia';
+                }
+            }
+            if (forceRange === true) mbCritApplyRangeMode(true);
+            else if (forceRange === false) mbCritApplyRangeMode(false);
+            else {
+                mbRefreshCritTermPlaceholder();
+                mbRefreshRangeWarning();
+            }
+        }
+
+        function mbBoundAllowsCalendar(textEl) {
+            var unit = mbGetDateUnit();
+            if (unit === 'ano') return false;
+            if (unit === 'mes') {
+                if (block.classList.contains('crit-term-range-mode')) {
+                    return textEl === termLo || textEl === termHi;
+                }
+                return textEl === term;
+            }
+            if (unit === 'dia') {
+                if (block.classList.contains('crit-term-range-mode')) {
+                    return textEl === termLo || textEl === termHi;
+                }
+                return textEl === term;
+            }
+            return block.classList.contains('crit-calendar-range-mode') && (textEl === termLo || textEl === termHi);
+        }
+
+        btnCalLo.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!mbBoundAllowsCalendar(termLo)) return;
+            if (mbIsCalOpenFor(boundLo)) mbCloseStyledCalendar();
+            else mbOpenBoundCalendar(termLo, boundLo);
+        });
+        btnCalHi.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!mbBoundAllowsCalendar(termHi)) return;
+            if (mbIsCalOpenFor(boundHi)) mbCloseStyledCalendar();
+            else mbOpenBoundCalendar(termHi, boundHi);
+        });
+        btnCalExact.addEventListener('click', function (ev) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            if (!mbBoundAllowsCalendar(term)) return;
+            if (mbIsCalOpenFor(termSingleWrap)) mbCloseStyledCalendar();
+            else mbOpenBoundCalendar(term, termSingleWrap);
+        });
+        term.addEventListener('click', function (ev) {
+            if (!mbBoundAllowsCalendar(term)) return;
+            ev.preventDefault();
+            mbToggleBoundCalendarOrType(term, termSingleWrap);
+        });
+        termLo.addEventListener('click', function (ev) {
+            if (!mbBoundAllowsCalendar(termLo)) return;
+            ev.preventDefault();
+            mbToggleBoundCalendarOrType(termLo, boundLo);
+        });
+        termHi.addEventListener('click', function (ev) {
+            if (!mbBoundAllowsCalendar(termHi)) return;
+            ev.preventDefault();
+            mbToggleBoundCalendarOrType(termHi, boundHi);
+        });
+        term.addEventListener('keydown', function () {
+            if (mbIsCalOpenFor(termSingleWrap)) mbCloseStyledCalendar();
+        });
+        termLo.addEventListener('keydown', function () {
+            if (mbIsCalOpenFor(boundLo)) mbCloseStyledCalendar();
+        });
+        termHi.addEventListener('keydown', function () {
+            if (mbIsCalOpenFor(boundHi)) mbCloseStyledCalendar();
+        });
+        term.addEventListener('input', function () {
+            var unit = mbGetDateUnit();
+            if (unit === 'dia' && !block.classList.contains('crit-term-range-mode')) {
+                mbApplyDateInputValidation(term, termSingleWrap, warnExact);
+            } else if (unit === 'mes' && !block.classList.contains('crit-term-range-mode')) {
+                mbApplyMonthInputValidation(term, termSingleWrap, warnExact);
+            }
+        });
+        termLo.addEventListener('input', function () {
+            var unit = mbGetDateUnit();
+            if (unit === 'dia') mbApplyDateInputValidation(termLo, boundLo, warnLo);
+            else if (unit === 'mes') mbApplyMonthInputValidation(termLo, boundLo, warnLo);
+            mbRefreshRangeWarning();
+        });
+        termHi.addEventListener('input', function () {
+            var unit = mbGetDateUnit();
+            if (unit === 'dia') mbApplyDateInputValidation(termHi, boundHi, warnHi);
+            else if (unit === 'mes') mbApplyMonthInputValidation(termHi, boundHi, warnHi);
+            mbRefreshRangeWarning();
+        });
+        term.addEventListener('blur', function () {
+            var unit = mbGetDateUnit();
+            if (unit === 'dia' && !block.classList.contains('crit-term-range-mode')) {
+                var v = mbValidateSirsiDateTyped(term.value);
+                if (v.ok && v.sirsi) term.value = v.sirsi;
+                mbApplyDateInputValidation(term, termSingleWrap, warnExact);
+            } else if (unit === 'mes' && !block.classList.contains('crit-term-range-mode')) {
+                var vm = mbValidateMonthTyped(term.value);
+                if (vm.ok && vm.month) term.value = vm.month;
+                mbApplyMonthInputValidation(term, termSingleWrap, warnExact);
+            }
+        });
+        termLo.addEventListener('blur', function () {
+            var unit = mbGetDateUnit();
+            if (unit === 'dia') {
+                var v = mbValidateSirsiDateTyped(termLo.value);
+                if (v.ok && v.sirsi) termLo.value = v.sirsi;
+                mbApplyDateInputValidation(termLo, boundLo, warnLo);
+            } else if (unit === 'mes') {
+                var vm = mbValidateMonthTyped(termLo.value);
+                if (vm.ok && vm.month) termLo.value = vm.month;
+                mbApplyMonthInputValidation(termLo, boundLo, warnLo);
+            }
+        });
+        termHi.addEventListener('blur', function () {
+            var unit = mbGetDateUnit();
+            if (unit === 'dia') {
+                var v = mbValidateSirsiDateTyped(termHi.value);
+                if (v.ok && v.sirsi) termHi.value = v.sirsi;
+                mbApplyDateInputValidation(termHi, boundHi, warnHi);
+            } else if (unit === 'mes') {
+                var vm = mbValidateMonthTyped(termHi.value);
+                if (vm.ok && vm.month) termHi.value = vm.month;
+                mbApplyMonthInputValidation(termHi, boundHi, warnHi);
+            }
+        });
 
         function mbRefreshRangeWarning() {
             var c = {
-                key: effectiveCriterionKey(selF.value, lineIdx),
+                key: effectiveCriterionKey(selF.value, lineIdx, sub.value),
                 sub: sub.value,
-                term: mbCritRangePartsToTerm(termLo.value, termHi.value)
+                term: mbCritBuildTermFromUi()
             };
             var risky = block.classList.contains('crit-term-range-mode') && !isRecommendedRangeCriterion(c);
             block.classList.toggle('crit-range-risk', risky);
         }
 
-        function mbCritApplyTermRangeMode(on) {
-            if (on) {
-                block.classList.add('crit-term-range-mode');
-                btnRange.textContent = '(Texto)';
-                termRangeWrap.removeAttribute('hidden');
-            } else {
-                block.classList.remove('crit-term-range-mode');
-                btnRange.textContent = '(Rangos)';
-                termRangeWrap.setAttribute('hidden', '');
-            }
-            mbRefreshRangeWarning();
-        }
-
         function mbRefreshCritTermPlaceholder() {
             var fk = selF.value || '';
+            var st = mbCritSyncDateClasses();
+            var hasCalField = st.hasCal;
+            var unit = st.unit;
+            var ranged = st.ranged;
+
             var ph1 =
                 'Sin «Exacto»: palabras enteras en orden en cualquier parte. Con «Exacto»: todo el valor sin *, o use *…* para subcadena. Con * sin Exacto: comodín clásico.';
             var phLo = 'Inicio (número o *)';
             var phHi = 'Fin (número o *)';
+            var calUi = hasCalField && unit === 'dia' && ranged;
+
             if (fk === 'mb:ejemplaresFiltrados') {
                 ph1 =
                     'Rango numérico: 3-*  ·  *-5  ·  4-12 (nº de 999 que pasan las otras líneas de criterio)';
@@ -9675,8 +11284,22 @@ if (!groupStates || !groupStates.length) {
                 ph1 = 'Ej: 2015-* , *-2000 , 1990-2010';
                 phLo = 'Año desde (o *)';
                 phHi = 'Año hasta (o *)';
-            } else if (fk === 'mb:999UYear') {
-                ph1 = 'Ej: 2015-* , *-2020 , 2015-2026 (año desde 999$u)';
+            } else if (hasCalField && unit === 'dia' && !ranged) {
+                ph1 = 'Una sola fecha Sirsi: MM/DD/YYYY (ej. 10/09/1998)';
+            } else if (hasCalField && unit === 'dia' && ranged) {
+                ph1 = 'Rango de fechas Sirsi MM/DD/YYYY (ej. 07/01/2024 — 06/30/2025)';
+                phLo = 'MM/DD/YYYY inicio';
+                phHi = 'MM/DD/YYYY fin';
+            } else if (hasCalField && unit === 'mes' && !ranged) {
+                ph1 = 'Un mes: MM/YYYY (ej. 09/1998)';
+            } else if (hasCalField && unit === 'mes' && ranged) {
+                ph1 = 'Rango de meses MM/YYYY';
+                phLo = 'MM/YYYY inicio (o *)';
+                phHi = 'MM/YYYY fin (o *)';
+            } else if (hasCalField && unit === 'ano' && !ranged) {
+                ph1 = 'Un año: 1998';
+            } else if (hasCalField && unit === 'ano' && ranged) {
+                ph1 = 'Rango de años: 2015-* · *-2000 · 1990-2010';
                 phLo = 'Año desde (o *)';
                 phHi = 'Año hasta (o *)';
             } else if (fk === 'mb:999aDeweyEjemplar') {
@@ -9691,42 +11314,188 @@ if (!groupStates || !groupStates.length) {
                     '100/110/111/700/710: admite «Apellido, Nombre» o «Nombre Apellido». Ej: garcia lopez juan, lopez garcia';
             }
             term.placeholder = ph1;
-            termLo.placeholder = phLo;
-            termHi.placeholder = phHi;
+            termLo._mbPhLo = phLo;
+            termHi._mbPhHi = phHi;
+            mbClearBoundDateErrors();
+            mbApplyCalendarInputs(calUi);
+            if (hasCalField && unit === 'dia' && !ranged) {
+                term._mbDateTitleBase = '1.º clic: calendario · 2.º clic: escribir (MM/DD/YYYY)';
+                term.title = term._mbDateTitleBase;
+                mbApplyDateInputValidation(term, termSingleWrap, warnExact);
+            } else if (hasCalField && unit === 'mes' && !ranged) {
+                term._mbDateTitleBase = '1.º clic: calendario de mes · 2.º: escribir MM/YYYY';
+                term.title = term._mbDateTitleBase;
+                term.placeholder = 'MM/YYYY (ej. 09/1998)';
+                mbApplyMonthInputValidation(term, termSingleWrap, warnExact);
+            } else {
+                term._mbDateTitleBase = '';
+                if (!calUi) term.title = '';
+            }
+            if (hasCalField && unit === 'mes' && ranged) {
+                termLo._mbDateTitleBase = '1.º clic: calendario de mes · 2.º: escribir MM/YYYY';
+                termHi._mbDateTitleBase = '1.º clic: calendario de mes · 2.º: escribir MM/YYYY';
+                termLo.title = termLo._mbDateTitleBase;
+                termHi.title = termHi._mbDateTitleBase;
+                termLo.placeholder = phLo;
+                termHi.placeholder = phHi;
+                mbApplyMonthInputValidation(termLo, boundLo, warnLo);
+                mbApplyMonthInputValidation(termHi, boundHi, warnHi);
+            } else if (hasCalField && unit === 'ano' && ranged) {
+                termLo.placeholder = phLo;
+                termHi.placeholder = phHi;
+            }
+            if (hasCalField && unit === 'dia' && ranged) {
+                calHint.textContent = 'Día + Rangos: calendario por día (MM/DD/YYYY).';
+            } else if (hasCalField && unit === 'dia') {
+                calHint.textContent = 'Día: una fecha MM/DD/YYYY con calendario.';
+            } else if (hasCalField && unit === 'mes') {
+                calHint.textContent =
+                    'Mes: calendario solo mes/año (MM/YYYY). Use (Rangos) para inicio–fin.';
+            } else if (hasCalField && unit === 'ano') {
+                calHint.textContent = 'Año: sin calendario. (Rangos) para 1990–2010, 2015-*, etc.';
+            } else {
+                calHint.textContent =
+                    'Calendario (modo Rangos): clic en mes o año del título para saltar. Formato Sirsi MM/DD/YYYY.';
+            }
+            if (typeof selF._mbComboSync === 'function') selF._mbComboSync();
         }
 
-        btnRange.addEventListener('click', function () {
-            var on = !block.classList.contains('crit-term-range-mode');
-            if (on) {
-                var sp = mbCritRangeSplitFromTerm(term.value);
-                if (sp) {
-                    termLo.value = sp.lo;
-                    termHi.value = sp.hi;
-                } else if (!String(termLo.value || '').trim() && !String(termHi.value || '').trim()) {
-                    termLo.value = '';
-                    termHi.value = '';
+        function mbNormalizeLegacyDateMode(raw) {
+            if (raw === 'exacta' || raw === 'texto') return { unit: 'dia', range: false };
+            if (raw === 'rango') return { unit: 'dia', range: true };
+            if (raw === 'mes') return { unit: 'mes', range: true };
+            if (raw === 'ano') return { unit: 'ano', range: true };
+            if (raw === 'dia') return { unit: 'dia', range: false };
+            return null;
+        }
+
+        function mbInferDateUnitFromRow(r) {
+            if (r && r.dateUnit && ['dia', 'mes', 'ano'].indexOf(r.dateUnit) >= 0) {
+                return { unit: r.dateUnit, range: !!r.termRange };
+            }
+            var leg = mbNormalizeLegacyDateMode(r && r.dateMode);
+            if (leg) {
+                if (r && r.dateMode === 'mes' && !r.termRange && r.term && !String(r.term).includes('-')) {
+                    return { unit: 'mes', range: false };
                 }
-                mbCritApplyTermRangeMode(true);
+                if (r && r.dateMode === 'ano' && !r.termRange) return { unit: 'ano', range: false };
+                return leg;
+            }
+            if (r && r.termRange) {
+                var tR = String(r.term || '').trim();
+                if (parseCalendarMonthTerm(tR) && !parseCalendarDateRangeTerm(tR)) return { unit: 'mes', range: true };
+                if (/^\d{4}/.test(tR) && tR.indexOf('/') === -1) return { unit: 'ano', range: true };
+                return { unit: 'dia', range: true };
+            }
+            var t = String((r && r.term) || '').trim();
+            if (parseCalendarMonthTerm(t) && !parseCalendarDateRangeTerm(t) && !parseCalendarExactTerm(t)) {
+                return { unit: 'mes', range: t.indexOf('-') !== -1 };
+            }
+            if (parseCalendarExactTerm(t)) return { unit: 'dia', range: false };
+            if (parseCalendarDateRangeTerm(t)) return { unit: 'dia', range: true };
+            if (/^\d{4}$/.test(t)) return { unit: 'ano', range: false };
+            return { unit: 'dia', range: false };
+        }
+
+        selDateMode.addEventListener('change', function () {
+            var unit = mbGetDateUnit();
+            var ranged = block.classList.contains('crit-term-range-mode');
+            if (!ranged) {
+                /* una casilla: adaptar placeholder/calendario */
+                mbCritApplyDateUnit(unit, false);
+                return;
+            }
+            /* dos casillas: limpiar/validar según unidad */
+            mbCritApplyDateUnit(unit, true);
+        });
+
+        btnRange.addEventListener('click', function () {
+            var goingRange = !block.classList.contains('crit-term-range-mode');
+            var hasCal = mbCritWantsCalendarRangeUi();
+            var unit = hasCal ? mbGetDateUnit() || 'dia' : null;
+            if (goingRange) {
+                var t0 = String(term.value || '').trim();
+                if (hasCal && unit === 'mes') {
+                    var sm = mbMonthSplitFromTerm(t0);
+                    if (sm) {
+                        termLo.value = sm.lo;
+                        termHi.value = sm.hi;
+                    } else if (t0) {
+                        termLo.value = t0;
+                        termHi.value = '';
+                    } else {
+                        termLo.value = '';
+                        termHi.value = '';
+                    }
+                } else if (hasCal && unit === 'ano') {
+                    if (/^\d{4}$/.test(t0)) {
+                        termLo.value = t0;
+                        termHi.value = '';
+                    } else {
+                        var spy = mbCritRangeSplitFromTerm(t0);
+                        if (spy) {
+                            termLo.value = spy.lo;
+                            termHi.value = spy.hi;
+                        } else {
+                            termLo.value = t0;
+                            termHi.value = '';
+                        }
+                    }
+                } else {
+                    var sp = mbCritRangeSplitFromTerm(t0);
+                    if (sp) {
+                        termLo.value = sp.lo;
+                        termHi.value = sp.hi;
+                    } else if (hasCal && parseCalendarExactTerm(t0)) {
+                        termLo.value = t0;
+                        termHi.value = t0;
+                    } else if (!String(termLo.value || '').trim() && !String(termHi.value || '').trim()) {
+                        termLo.value = t0 || '';
+                        termHi.value = '';
+                    }
+                }
+                mbCritApplyRangeMode(true);
             } else {
-                term.value = mbCritRangePartsToTerm(termLo.value, termHi.value);
-                mbCritApplyTermRangeMode(false);
-                mbRefreshCritTermPlaceholder();
+                term.value = mbCritBuildTermFromUi();
+                mbCritApplyRangeMode(false);
             }
         });
 
-        if (row.termRange) {
-            mbCritApplyTermRangeMode(true);
-            btnRange.textContent = '(Texto)';
-            termLo.value = row.termLo != null ? String(row.termLo) : '';
-            termHi.value = row.termHi != null ? String(row.termHi) : '';
-            if (!String(termLo.value).trim() && !String(termHi.value).trim() && row.term) {
-                var sp0 = mbCritRangeSplitFromTerm(row.term);
-                if (sp0) {
-                    termLo.value = sp0.lo;
-                    termHi.value = sp0.hi;
+        (function mbInitCriterionDateMode() {
+            var inferred = { unit: 'dia', range: false };
+            if (mbCritWantsCalendarRangeUi()) {
+                inferred = mbInferDateUnitFromRow(row);
+            } else if (row.termRange) {
+                inferred = { unit: null, range: true };
+            }
+            if (inferred.range) {
+                if (row.termLo != null || row.termHi != null) {
+                    termLo.value = row.termLo != null ? String(row.termLo) : '';
+                    termHi.value = row.termHi != null ? String(row.termHi) : '';
+                }
+                if (!String(termLo.value).trim() && !String(termHi.value).trim() && row.term) {
+                    if (inferred.unit === 'mes') {
+                        var sm0 = mbMonthSplitFromTerm(row.term);
+                        if (sm0) {
+                            termLo.value = sm0.lo;
+                            termHi.value = sm0.hi;
+                        }
+                    } else {
+                        var sp0 = mbCritRangeSplitFromTerm(row.term);
+                        if (sp0) {
+                            termLo.value = sp0.lo;
+                            termHi.value = sp0.hi;
+                        } else if (inferred.unit === 'ano' && /^\d{4}$/.test(String(row.term).trim())) {
+                            termLo.value = String(row.term).trim();
+                        }
+                    }
                 }
             }
-        }
+            if (mbCritWantsCalendarRangeUi()) {
+                selDateMode.value = inferred.unit || 'dia';
+            }
+            mbCritApplyRangeMode(!!inferred.range);
+        })();
 
         selF.addEventListener('change', function () {
             sub.value = '';
@@ -9734,12 +11503,24 @@ if (!groupStates || !groupStates.length) {
             sub._mbCritSubDebounce = null;
             sub.classList.remove('crit-sub-err-pulse');
             refreshInlineOverrideVisual();
+            var stillCal = mbCritWantsCalendarRangeUi();
+            var keepRange = block.classList.contains('crit-term-range-mode');
+            block.classList.toggle('crit-has-date-modes', stillCal);
+            if (stillCal && !selDateMode.value) selDateMode.value = 'dia';
+            mbCritApplyRangeMode(keepRange);
+            mbUpdateCritFieldCopyEnabled();
+            if (typeof selF._mbComboSync === 'function') selF._mbComboSync();
+        });
+        sub.addEventListener('input', function () {
+            var stillCal = mbCritWantsCalendarRangeUi();
+            var had = block.classList.contains('crit-has-date-modes');
+            if (stillCal !== had) {
+                block.classList.toggle('crit-has-date-modes', stillCal);
+                if (stillCal) selDateMode.value = selDateMode.value || 'dia';
+            }
             mbRefreshCritTermPlaceholder();
             mbRefreshRangeWarning();
-            mbUpdateCritFieldCopyEnabled();
         });
-        termLo.addEventListener('input', mbRefreshRangeWarning);
-        termHi.addEventListener('input', mbRefreshRangeWarning);
         mbRefreshCritTermPlaceholder();
         mbRefreshRangeWarning();
 
@@ -9805,24 +11586,45 @@ if (!groupStates || !groupStates.length) {
                 var loE = el.querySelector('.crit-term-lo');
                 var hiE = el.querySelector('.crit-term-hi');
                 var ex = el.querySelector('.crit-exact');
+                var dmEl = el.querySelector('select.crit-date-mode');
                 var kRaw = fk && fk.value != null ? String(fk.value).trim() : '';
+                var dateUnit = null;
+                if (el.classList.contains('crit-has-date-modes') && dmEl) {
+                    dateUnit = String(dmEl.value || 'dia').trim() || 'dia';
+                    if (dateUnit !== 'mes' && dateUnit !== 'ano') dateUnit = 'dia';
+                }
                 var rangeMode = el.classList.contains('crit-term-range-mode');
                 var termVal;
                 if (rangeMode && loE && hiE) {
-                    termVal = mbCritRangePartsToTerm(loE.value, hiE.value);
-                    /** Si lo/hi vacíos → `*-*` → cadena vacía: no perder el término escrito en modo texto (p. ej. PRBOOK con rangos activados por error). */
+                    if (dateUnit === 'mes') termVal = mbMonthPartsToTerm(loE.value, hiE.value);
+                    else if (dateUnit === 'ano') termVal = mbYearPartsToTerm(loE.value, hiE.value);
+                    else termVal = mbCritRangePartsToTerm(loE.value, hiE.value);
                     if (!String(termVal || '').trim() && te && String(te.value || '').trim()) {
                         termVal = te.value;
                     }
                 } else {
                     termVal = te ? te.value : '';
                 }
+                var dateMode =
+                    dateUnit === 'mes'
+                        ? 'mes'
+                        : dateUnit === 'ano'
+                          ? 'ano'
+                          : dateUnit === 'dia'
+                            ? rangeMode
+                                ? 'rango'
+                                : 'exacta'
+                            : rangeMode
+                              ? 'rango'
+                              : 'texto';
                 rows.push({
                     op: rows.length === 0 ? null : pendingRawOp,
                     key: kRaw,
                     sub: su ? su.value : '',
                     term: termVal,
                     exact: !!(ex && ex.checked),
+                    dateUnit: dateUnit,
+                    dateMode: dateMode,
                     termRange: rangeMode,
                     termLo: loE ? String(loE.value) : '',
                     termHi: hiE ? String(hiE.value) : ''
