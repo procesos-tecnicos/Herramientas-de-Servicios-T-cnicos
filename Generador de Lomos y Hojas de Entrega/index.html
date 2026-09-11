@@ -2408,11 +2408,12 @@
                     itemMemory['Created'] = symphonyFormatearFecha(dateMatch[1]);
                 }
 
-                let homeLocMatch = line.match(/home location:(\w+)/);
+                // \S+ (no \w+) para codes con punto, p.ej. A.NIDO
+                let homeLocMatch = line.match(/home location:(\S+)/);
                 if (homeLocMatch) itemMemory['Home Location'] = homeLocMatch[1];
 
                 if (nextLine.startsWith('current location:')) {
-                    let currentLocMatch = nextLine.match(/current location:(\w+)/);
+                    let currentLocMatch = nextLine.match(/current location:(\S+)/);
                     if (currentLocMatch) itemMemory['Current Location'] = currentLocMatch[1];
                 }
 
@@ -4578,7 +4579,8 @@
         'PROQUEST':   'En línea',
         'CENTSOFIA':  'Colección Centro Sofía',
         'ARCHIVE':    'Archivo',
-        'USC':        'Colección Sagradeña'
+        'USC':        'Colección Sagradeña',
+        'A.NIDO':     'Colección Audiovisual'
     };
 
     const COLECCION_PLACEHOLDER = '[Escribir aquí la colección]';
