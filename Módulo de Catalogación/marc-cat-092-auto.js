@@ -4,7 +4,13 @@
  *   $b ← Cutter-Sanborn + work-mark (con 100) o + año (sin 100)
  *
  * Con campo 100:  092$b = Cutter(apellido) + letra-título
- * Sin campo 100:  092$b = Cutter(1ª-palabra-título) + " " + año(264$c)
+ * Sin campo 100:  092$b = Cutter(1ª-palabra-título) + " " + año(008)
+ * Si 041 ind.1 = 1 (traducción), se añade al final la inicial
+ * mayúscula del código en 041 $a (spa→S, eng→E, etc.).
+ * Si la 1ª palabra del 245 (tras ind.2) no tiene letras
+ * (número, o signo + número: «10», «¡10», «¿1966»), el título
+ * para el Cutter sale del primer 246 $a que sí tenga una palabra.
+ * Si ese 246 tampoco, sigue con el siguiente.
  *
  * Solo se aplica: (1) al botón ↻ del campo 092, o
  *                 (2) al crear un 092 nuevo que no existía.
@@ -52,6 +58,32 @@
 
     function titleFirstWord(titleA, skip) {
         return firstWord(String(titleA || "").slice(Math.max(0, skip || 0)).trim());
+    }
+
+    /** Número solo, o signo + número («10», «¡10», «¿1966»): no hay letra para el Cutter. */
+    function wordUnusableForCutter(word) {
+        var s = String(word || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (!s) return false;
+        return !/[A-Za-z]/.test(s);
+    }
+
+    /**
+     * Si el 245 no aporta una palabra («10 poetas…», «¡10 poetas…»), el Cutter usa
+     * el primer 246 $a cuya primera palabra sí tenga letras. Si ninguno, se queda el 245.
+     */
+    function titleSourceForCutter(fields, f245) {
+        var titleA = subVal(f245, "a");
+        var skip = parseInd2(f245);
+        var word = titleFirstWord(titleA, skip);
+        if (!wordUnusableForCutter(word)) return { titleA: titleA, skip: skip, allNumeric: false };
+        var list = fields || [];
+        for (var i = 0; i < list.length; i++) {
+            if (!list[i] || tagNorm(list[i].tag) !== "246") continue;
+            var alt = String(subVal(list[i], "a") || "").trim();
+            var altWord = titleFirstWord(alt, 0);
+            if (altWord && !wordUnusableForCutter(altWord)) return { titleA: alt, skip: 0, allNumeric: false };
+        }
+        return { titleA: titleA, skip: skip, allNumeric: true };
     }
 
     function findField(fields, tag) {
@@ -138,6 +170,23 @@
         return "";
     }
 
+    function parseInd1(field) {
+        var ind = String(field && field.ind != null ? field.ind : "  ");
+        return ind.length > 0 ? ind.charAt(0) : " ";
+    }
+
+    /**
+     * Letra de idioma al final del Cutter si 041 ind.1 = 1 (traducción).
+     * Usa la primera letra del código en 041 $a (spa→S, eng→E).
+     */
+    function translationLangMark(fields) {
+        var f041 = findField(fields, "041");
+        if (!f041 || parseInd1(f041) !== "1") return "";
+        var a = String(subVal(f041, "a") || "").trim().toLowerCase();
+        var m = a.match(/[a-z]/);
+        return m ? m[0].toUpperCase() : "";
+    }
+
     function rebuildSf(field, sfList) {
         field.sfList = sfList;
         field.sf = {};
@@ -163,8 +212,9 @@
 
         if (!f245) return { deweyA: deweyA, cutterB: cutterB };
 
-        var titleA = subVal(f245, "a");
-        var skip = parseInd2(f245);
+        var titleSrc = titleSourceForCutter(fields, f245);
+        var titleA = titleSrc.titleA;
+        var skip = titleSrc.skip;
         var tLetter = titleLetter(titleA, skip);
         var hasAuthor = f100 && subVal(f100, "a").trim();
 
@@ -185,7 +235,13 @@
             if (cutter2 && year) cutterB = cutter2 + " " + year;
             else if (cutter2) cutterB = cutter2;
         }
-        return { deweyA: deweyA, cutterB: cutterB };
+        var langMark = translationLangMark(fields);
+        if (langMark && cutterB) cutterB = cutterB + langMark;
+        var cutterNote = "";
+        if (!cutterB && titleSrc.allNumeric) {
+            cutterNote = "No se creó el Cutter: el 245 y los 246 no tienen una palabra, solo un número. Añada un 246 con el número en palabras (indicadores 3 y en blanco).";
+        }
+        return { deweyA: deweyA, cutterB: cutterB, cutterNote: cutterNote };
     }
 
     /* ---------- DOM helpers ---------- */
@@ -295,6 +351,7 @@
         rebuildSf(f092, sfList);
         write092ToDom(list);
         if (typeof global.marcCatMarkDirty === "function") global.marcCatMarkDirty();
+        return vals.cutterNote || "";
     }
 
     /* marcCatApply092ToFields: para el export hook, pero NO sobreescribe 092 existente */
