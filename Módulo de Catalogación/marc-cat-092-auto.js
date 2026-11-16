@@ -5,8 +5,9 @@
  *
  * Con campo 100:  092$b = Cutter(apellido) + letra-título
  * Sin campo 100:  092$b = Cutter(1ª-palabra-título) + " " + año(008)
- * Si 041 ind.1 = 1 (traducción), se añade al final la inicial
- * mayúscula del código en 041 $a (spa→S, eng→E, etc.).
+ * Si 041 ind.1 = 1 (traducción), se añade al final (con espacio)
+ * la inicial mayúscula del código en 041 $a (spa→S, eng→E, etc.).
+ * Ej.: F965v S · F965v3 S
  * Si la 1ª palabra del 245 (tras ind.2) no tiene letras
  * (número, o signo + número: «10», «¡10», «¿1966»), el título
  * para el Cutter sale del primer 246 $a que sí tenga una palabra.
@@ -236,7 +237,7 @@
             else if (cutter2) cutterB = cutter2;
         }
         var langMark = translationLangMark(fields);
-        if (langMark && cutterB) cutterB = cutterB + langMark;
+        if (langMark && cutterB) cutterB = cutterB + " " + langMark;
         var cutterNote = "";
         if (!cutterB && titleSrc.allNumeric) {
             cutterNote = "No se creó el Cutter: el 245 y los 246 no tienen una palabra, solo un número. Añada un 246 con el número en palabras (indicadores 3 y en blanco).";
