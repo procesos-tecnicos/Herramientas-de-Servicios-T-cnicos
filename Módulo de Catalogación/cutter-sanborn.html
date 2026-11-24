@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <script>
+    (function () {
+        try {
+            var v = localStorage.getItem("metabuscador-tema-visual");
+            document.documentElement.setAttribute("data-tema", v === "dia" ? "dia" : "oscuro");
+        } catch (e) {
+            document.documentElement.setAttribute("data-tema", "oscuro");
+        }
+    })();
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tabla Cutter-Sanborn</title>
+    <link rel="icon" href="favicon-marc.png" type="image/png">
+    <style>
+        :root {
+            --bg: #1a2230;
+            --surface: #243041;
+            --surface-2: #2c3849;
+            --border: #445566;
+            --text: #e8eef5;
+            --muted: #9aa8ba;
+            --accent: #3b82f6;
+            --accent-text: #b4cff9;
+            --accent-soft: rgba(96, 165, 250, 0.2);
+            --hit: rgba(96, 165, 250, 0.28);
+            --field: #283444;
+            --danger: #fecaca;
+            color-scheme: dark;
+        }
+        html[data-tema="dia"] {
+            --bg: #FDFBF0;
+            --surface: #FAF9F6;
+            --surface-2: #DFE1DD;
+            --border: #C3CCBD;
+            --text: #363F3D;
+            --muted: #4F5A56;
+            --accent: #4A5652;
+            --accent-text: #363F3D;
+            --accent-soft: rgba(54, 63, 61, 0.12);
+            --hit: #C3CCBD;
+            --field: #F1F1EF;
+            --danger: #991b1b;
+            color-scheme: light;
+        }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; height: 100%; }
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        header h1 { margin: 0; font-size: 1.15rem; font-weight: 650; }
+        header p { margin: 2px 0 0; color: var(--muted); font-size: 0.86rem; }
+        header a { color: var(--accent-text); font-weight: 600; text-decoration: none; font-size: 0.86rem; }
+        .grow { flex: 1; }
+        button.ghost, .letters button {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button.ghost { padding: 6px 10px; }
+        .sheet {
+            width: min(720px, calc(100% - 72px));
+            margin: 0 auto;
+            flex: 1;
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+        }
+        .panel {
+            margin: 16px 0 0;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .search-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+        label { font-size: 0.82rem; color: var(--muted); }
+        input[type="text"] {
+            flex: 1;
+            min-width: 180px;
+            background: var(--field);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 1rem;
+        }
+        .result {
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: auto 1fr;
+            gap: 8px 18px;
+            align-items: baseline;
+        }
+        .cutter, .row .code {
+            font-variant-numeric: tabular-nums;
+        }
+        .cutter {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+        .thead span:last-child {
+            text-align: center;
+            color: var(--accent-text);
+            font-weight: 700;
+        }
+        .row .code {
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.05rem;
+            letter-spacing: 0.03em;
+            color: var(--text);
+        }
+        .steps { color: var(--muted); font-size: 0.9rem; line-height: 1.45; }
+        .steps strong { color: var(--text); font-weight: 650; }
+        .empty { color: var(--danger); }
+        .letters {
+            display: grid;
+            grid-template-columns: repeat(13, 1fr);
+            gap: 6px;
+            margin: 12px 0 0;
+            justify-items: center;
+        }
+        .letters button {
+            width: 100%;
+            max-width: 40px;
+            height: 32px;
+            padding: 0;
+            font-size: 0.78rem;
+        }
+        .letters button.is-on { background: var(--accent-soft); border-color: var(--accent); }
+        .table-wrap {
+            margin: 12px 0 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            min-height: 280px;
+            flex: 1;
+        }
+        .thead, .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            padding: 0 14px;
+            align-items: center;
+        }
+        .thead {
+            height: 36px;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            background: var(--surface-2);
+        }
+        .scroller { position: relative; overflow: auto; flex: 1; }
+        .row {
+            height: 34px;
+            font-variant-numeric: tabular-nums;
+        }
+        .row:nth-child(even) { background: rgba(127, 127, 127, 0.06); }
+        .row.is-hit { background: var(--hit); font-weight: 650; }
+        .row span:not(.code) { color: var(--muted); }
+    </style>
+</head>
+<body>
+    <header>
+        <div>
+            <h1>Tabla Cutter-Sanborn</h1>
+        </div>
+        <span class="grow"></span>
+        <a href="index.html">Volver al módulo</a>
+        <button type="button" class="ghost" id="tema">Tema</button>
+    </header>
+
+    <div class="sheet">
+    <section class="panel" aria-label="Búsqueda">
+        <div class="search-row">
+            <label for="q">Palabra</label>
+            <input type="text" id="q" autocomplete="off" spellcheck="false" placeholder="Diez, Sanz, García…">
+        </div>
+        <div class="result" id="result" hidden></div>
+    </section>
+
+    <nav class="letters" id="letters" aria-label="Letras"></nav>
+
+    <div class="table-wrap">
+        <div class="thead">
+            <span>Entrada</span>
+            <span>Número</span>
+            <span>Cutter</span>
+        </div>
+        <div class="scroller" id="scroller">
+            <div id="spacer">
+                <div id="rows"></div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <script src="marc-cat-cutter-sanborn-data.js"></script>
+    <script src="marc-cat-cutter-sanborn.js"></script>
+    <script>
+    (function () {
+        var ROW = 34;
+        var table = (typeof marcCatCutterSanbornTable === "function") ? marcCatCutterSanbornTable() : [];
+        var hit = -1;
+        var letterBtns = {};
+        var activeLetter = "";
+        var scroller = document.getElementById("scroller");
+        var spacer = document.getElementById("spacer");
+        var rowsEl = document.getElementById("rows");
+        var resultEl = document.getElementById("result");
+        var q = document.getElementById("q");
+
+        spacer.style.position = "relative";
+
+        function escapeHtml(s) {
+            return String(s == null ? "" : s)
+                .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        var built = "";
+        for (var n = 0; n < table.length; n++) {
+            var e = table[n];
+            var code = (e.norm.charAt(0) || "") + e.num;
+            built += '<div class="row" data-i="' + n + '">' +
+                '<span class="stem">' + escapeHtml(e.stem) + "</span>" +
+                "<span>" + e.num + "</span>" +
+                '<span class="code">' + escapeHtml(code) + "</span></div>";
+        }
+        rowsEl.innerHTML = built;
+
+        function setHit(index) {
+            var prev = rowsEl.querySelector(".row.is-hit");
+            if (prev) prev.classList.remove("is-hit");
+            hit = index;
+            if (index >= 0 && rowsEl.children[index]) rowsEl.children[index].classList.add("is-hit");
+        }
+
+        function letterAtMiddle() {
+            if (!table.length) return "";
+            var mid = scroller.scrollTop + scroller.clientHeight / 2;
+            var probe = document.elementFromPoint(
+                scroller.getBoundingClientRect().left + 24,
+                scroller.getBoundingClientRect().top + scroller.clientHeight / 2
+            );
+            var row = probe && probe.closest ? probe.closest(".row") : null;
+            if (row && row.dataset.i != null && table[row.dataset.i]) return table[row.dataset.i].norm.charAt(0);
+            var i = Math.min(table.length - 1, Math.max(0, Math.floor(mid / ROW)));
+            return table[i] ? table[i].norm.charAt(0) : "";
+        }
+
+        function markLetter() {
+            var ch = "";
+            if (hit >= 0 && rowsEl.children[hit]) {
+                var rowMid = rowsEl.children[hit].offsetTop + ROW / 2;
+                var top = scroller.scrollTop;
+                var bot = top + scroller.clientHeight;
+                if (rowMid >= top && rowMid <= bot) ch = table[hit].norm.charAt(0);
+            }
+            if (!ch) ch = letterAtMiddle();
+            if (ch === activeLetter) return;
+            activeLetter = ch;
+            Object.keys(letterBtns).forEach(function (k) {
+                letterBtns[k].classList.toggle("is-on", k === ch);
+            });
+        }
+
+        function scrollToIndex(index) {
+            var el = rowsEl.children[index];
+            if (!el) return;
+            var target = el.offsetTop - scroller.clientHeight / 2 + ROW / 2;
+            scroller.scrollTop = Math.max(0, target);
+            markLetter();
+        }
+
+        function lookup() {
+            var raw = q.value;
+            var norm = marcCatCutterSanbornNorm(raw);
+            var code = marcCatCutterSanbornLookup(raw);
+            var entry = marcCatCutterSanbornFindEntry(raw);
+            hit = entry ? table.indexOf(entry) : -1;
+            setHit(hit);
+            if (!String(raw || "").trim()) {
+                resultEl.hidden = true;
+                setHit(-1);
+                markLetter();
+                return;
+            }
+            resultEl.hidden = false;
+            if (!norm) {
+                resultEl.innerHTML = '<p class="empty">La palabra no tiene letras. El Cutter queda en blanco.</p>';
+                markLetter();
+                return;
+            }
+            var prev = hit > 0 ? table[hit - 1] : null;
+            var next = hit >= 0 && hit < table.length - 1 ? table[hit + 1] : null;
+            resultEl.innerHTML =
+                '<div class="cutter">' + escapeHtml(code || "—") + "</div>" +
+                '<div class="steps">' +
+                "Palabra normalizada: <strong>" + escapeHtml(norm) + "</strong><br>" +
+                "Entrada usada: <strong>" + escapeHtml(entry ? entry.stem : "—") + "</strong>" +
+                " (" + escapeHtml(entry ? entry.norm : "") + ") → número <strong>" + escapeHtml(entry ? entry.num : "—") + "</strong><br>" +
+                "Cutter = primera letra (" + escapeHtml(norm.charAt(0)) + ") + " + escapeHtml(entry ? entry.num : "") +
+                (prev ? "<br>Anterior: " + escapeHtml(prev.stem) + " (" + escapeHtml(prev.norm) + ")" : "") +
+                (next ? " · Siguiente: " + escapeHtml(next.stem) + " (" + escapeHtml(next.norm) + ")" : "") +
+                "</div>";
+            if (hit >= 0) scrollToIndex(hit);
+            else markLetter();
+        }
+
+        var letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+        var nav = document.getElementById("letters");
+        letters.forEach(function (ch) {
+            var b = document.createElement("button");
+            b.type = "button";
+            b.textContent = ch;
+            letterBtns[ch] = b;
+            b.addEventListener("click", function () {
+                var i;
+                for (i = 0; i < table.length; i++) {
+                    if (table[i].norm.charAt(0) === ch) break;
+                }
+                if (i < table.length) scrollToIndex(i);
+            });
+            nav.appendChild(b);
+        });
+
+        scroller.addEventListener("scroll", markLetter);
+        q.addEventListener("input", lookup);
+        window.addEventListener("resize", markLetter);
+
+        document.getElementById("tema").addEventListener("click", function () {
+            var next = document.documentElement.getAttribute("data-tema") === "dia" ? "oscuro" : "dia";
+            document.documentElement.setAttribute("data-tema", next);
+            try { localStorage.setItem("metabuscador-tema-visual", next); } catch (e) {}
+        });
+
+        markLetter();
+    })();
+    </script>
+</body>
+</html>
